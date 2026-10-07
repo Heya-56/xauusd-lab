@@ -1,0 +1,38 @@
+lab:
+  name: XAUUSD-Lab-SATA
+  mode: research
+  ai_ml: false
+  instrument: XAUUSD
+  execution:
+    broker: ibkr
+    environment: paper
+    live_orders_enabled: false
+
+strategy_catalog:
+  source: sata
+  horizons: [scalping, normal, swing]
+  methods: [tendance, smc, orderblock, combine]
+  candidates: 12
+
+validation:
+  same_data: true
+  same_cost_model: true
+  same_slippage_model: true
+  out_of_sample_required: true
+  minimum_trades: 30
+  paper_required_before_live: true
+
+confluence:
+  enabled: true
+  min_agreement: 2
+  disagreement: no_trade
+
+data:
+  primary: ibkr
+  research_validation_sources: [yfinance]
+  provenance_required: true
+
+safety:
+  live_disabled_by_default: true
+  require_paper_validation: true
+  require_manual_live_enablement: true
