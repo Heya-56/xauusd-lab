@@ -1,0 +1,16 @@
+//@version=6
+strategy("Test Création Bot — XAUUSD", overlay=true, pyramiding=0, initial_capital=10000)
+fast=ta.ema(close,20)
+slow=ta.ema(close,50)
+atr14=ta.atr(14)
+r=atr14*0.5
+if ta.crossover(fast,slow)
+    strategy.entry("LONG",strategy.long)
+if ta.crossunder(fast,slow)
+    strategy.entry("SHORT",strategy.short)
+strategy.exit("L-TP1","LONG",stop=strategy.position_avg_price-r,limit=strategy.position_avg_price+r,qty_percent=50)
+strategy.exit("L-TP2","LONG",stop=strategy.position_avg_price-r,limit=strategy.position_avg_price+2*r,qty_percent=50)
+strategy.exit("S-TP1","SHORT",stop=strategy.position_avg_price+r,limit=strategy.position_avg_price-r,qty_percent=50)
+strategy.exit("S-TP2","SHORT",stop=strategy.position_avg_price+r,limit=strategy.position_avg_price-2*r,qty_percent=50)
+plot(fast,"EMA 20")
+plot(slow,"EMA 50")
