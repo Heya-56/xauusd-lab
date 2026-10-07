@@ -1,29 +1,36 @@
-# Test Création Bot — XAUUSD
+# Test Création Bot — XAUUSD Lab
 
-Bot pédagogique minimaliste pour comprendre l'architecture d'un système de trading automatisé.
+NE ME CROYEZ PAS. REGARDEZ L’ARCHITECTURE.
 
-> ⚠️ Prototype éducatif. Aucun ordre réel n'est envoyé par ce projet.
+Laboratoire pédagogique : données → stratégie → risque → backtest → API → interface.
 
-## Architecture
+Stratégie minimale:
+- XAUUSD
+- EMA 20 / EMA 50
+- stop = 0,5 × ATR14
+- TP1 = 1R sur 50 %
+- TP2 = 2R sur 50 %
+- risque théorique = 0,25 % par trade
+- perte journalière max = 0,50 %
+- taille max du prototype = 0,01 lot
+- aucune exécution broker réelle
 
-TradingView → webhook FastAPI → moteur de stratégie → calcul du risque → signal → journal SQL.
+Architecture:
+TradingView/Pine → moteur Python → risque → backtest → SQL/journal → FastAPI → dashboard.
 
-Le dashboard n'est qu'une interface. Le moteur reste côté serveur.
+GitHub conserve le code. GitHub Actions lance les tests. Vercel publie l’interface/API légère. Aucun secret broker dans le navigateur.
 
-## Stratégie simple
+Lancer:
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest -q
+python backtest.py
+uvicorn api:app --reload
 
-- Actif : XAUUSD
-- Signal : croisement EMA 20 / EMA 50
-- Entrée : clôture de la bougie confirmant le croisement
-- Stop : 0,5 × ATR(14)
-- TP1 : 1R sur 50 % de la position
-- TP2 : 2R sur 50 % de la position
-- Une seule position à la fois
-- Risque cible : 0,25 % du capital
-- Perte journalière maximale : 0,50 %
-- Taille plafonnée à 0,01 lot dans le prototype
-- Mode par défaut : signal/paper, jamais exécution réelle
+TradingView est une couche de visualisation/test via tradingview_strategy.pine. Le webhook est optionnel : le laboratoire n’en dépend pas.
 
-## Important
+Le dossier data/ contient un petit jeu OHLC synthétique reproductible. Pour une étude sérieuse, utiliser des données historiques fiables et documenter spread, commissions, slippage et gaps.
 
-Trading comporte un risque de perte. Un backtest ou un signal ne garantit aucune performance future.
+Avertissement:
+Le trading comporte un risque réel de perte. L’automatisation ne garantit aucun bénéfice et un backtest ne garantit pas les performances futures. Ce projet est éducatif/technique et ne constitue pas un conseil en investissement.
