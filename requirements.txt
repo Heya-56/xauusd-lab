@@ -1,6 +1,4 @@
-pandas>=2.2
-numpy>=2.0
-PyYAML>=6.0
-yfinance>=0.2.50
-requests>=2.32
-pytest>=8.0
+fastapi
+uvicorn
+pydantic
+pytest
