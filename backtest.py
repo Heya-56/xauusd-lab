@@ -63,9 +63,9 @@ def run_backtest(rows, starting_capital=10000.0, risk_fraction=0.0025,
                 pnl=(stop-entry)*contract_size*lots*sign
                 trades.append(Trade(side,entry,stop,pnl,"STOP")); capital+=pnl; open_trade=None
             elif tp2_hit:
-                pnl=(tp2-entry)*contract_size*lots*sign
-                if open_trade["tp1_done"]: pnl*=1
-                else: pnl*=1
+                # If both targets are crossed inside one bar, model 50% at 1R and 50% at 2R.
+                r_value=(tp1-entry)*contract_size*lots*sign
+                pnl=(r_value*0.5 if not open_trade["tp1_done"] else 0) + ((tp2-entry)*contract_size*lots*sign*0.5)
                 trades.append(Trade(side,entry,tp2,pnl,"TP2")); capital+=pnl; open_trade=None
             elif tp1_hit and not open_trade["tp1_done"]:
                 pnl=(tp1-entry)*contract_size*lots*0.5*sign
