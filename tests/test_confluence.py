@@ -16,3 +16,8 @@ def test_disagreement_means_no_trade():
     ], min_agreement=2)
     assert d.side == "none"
     assert not should_trade(d, True, True, True)
+
+
+def test_sata_cartography_has_12_candidates():
+    from src.strategies.sata_adapter import catalog
+    assert len(catalog()) == 12
