@@ -1,16 +1,29 @@
-# Dashboard API contract
+# Test Création Bot — XAUUSD
 
-Read-only endpoints for the first dashboard:
+Bot pédagogique minimaliste pour comprendre l'architecture d'un système de trading automatisé.
 
-GET /api/market/xauusd
-GET /api/market/xauusd/candles
-GET /api/experiment/current
-GET /api/experiment/history
-GET /api/strategies
-GET /api/strategies/:id/results
-GET /api/data/quality
-GET /api/signals/current
-GET /api/trades
-GET /api/performance
+> ⚠️ Prototype éducatif. Aucun ordre réel n'est envoyé par ce projet.
 
-The browser must never receive broker credentials or contain order-execution logic.
+## Architecture
+
+TradingView → webhook FastAPI → moteur de stratégie → calcul du risque → signal → journal SQL.
+
+Le dashboard n'est qu'une interface. Le moteur reste côté serveur.
+
+## Stratégie simple
+
+- Actif : XAUUSD
+- Signal : croisement EMA 20 / EMA 50
+- Entrée : clôture de la bougie confirmant le croisement
+- Stop : 0,5 × ATR(14)
+- TP1 : 1R sur 50 % de la position
+- TP2 : 2R sur 50 % de la position
+- Une seule position à la fois
+- Risque cible : 0,25 % du capital
+- Perte journalière maximale : 0,50 %
+- Taille plafonnée à 0,01 lot dans le prototype
+- Mode par défaut : signal/paper, jamais exécution réelle
+
+## Important
+
+Trading comporte un risque de perte. Un backtest ou un signal ne garantit aucune performance future.
