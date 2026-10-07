@@ -1,24 +1,35 @@
 CREATE TABLE IF NOT EXISTS candles (
- id bigserial PRIMARY KEY, symbol text NOT NULL DEFAULT 'XAUUSD',
- timeframe text NOT NULL DEFAULT '15m', ts timestamptz NOT NULL,
- open numeric NOT NULL, high numeric NOT NULL, low numeric NOT NULL,
- close numeric NOT NULL, volume numeric DEFAULT 0,
- UNIQUE(symbol,timeframe,ts)
+ id INTEGER PRIMARY KEY,
+ symbol TEXT NOT NULL,
+ timestamp TEXT NOT NULL,
+ open REAL NOT NULL,
+ high REAL NOT NULL,
+ low REAL NOT NULL,
+ close REAL NOT NULL
 );
-
 CREATE TABLE IF NOT EXISTS signals (
- id bigserial PRIMARY KEY, symbol text NOT NULL DEFAULT 'XAUUSD',
- ts timestamptz NOT NULL DEFAULT now(), action text NOT NULL,
- entry numeric NOT NULL, stop_loss numeric, tp1 numeric, tp2 numeric,
- risk_pct numeric NOT NULL DEFAULT 0.25,
- status text NOT NULL DEFAULT 'PAPER', reason text
+ id INTEGER PRIMARY KEY,
+ symbol TEXT NOT NULL,
+ timestamp TEXT NOT NULL,
+ side TEXT NOT NULL,
+ entry REAL NOT NULL,
+ stop REAL NOT NULL,
+ tp1 REAL NOT NULL,
+ tp2 REAL NOT NULL
 );
-
+CREATE TABLE IF NOT EXISTS trades (
+ id INTEGER PRIMARY KEY,
+ signal_id INTEGER,
+ side TEXT NOT NULL,
+ entry REAL NOT NULL,
+ exit REAL,
+ lots REAL NOT NULL,
+ pnl REAL,
+ reason TEXT
+);
 CREATE TABLE IF NOT EXISTS risk_limits (
- id integer PRIMARY KEY DEFAULT 1,
- risk_per_trade_pct numeric NOT NULL DEFAULT 0.25,
- max_daily_loss_pct numeric NOT NULL DEFAULT 0.50,
- max_position_size numeric NOT NULL DEFAULT 0.01
+ id INTEGER PRIMARY KEY,
+ risk_per_trade REAL NOT NULL DEFAULT 0.0025,
+ max_daily_loss REAL NOT NULL DEFAULT 0.005,
+ max_lot REAL NOT NULL DEFAULT 0.01
 );
-
-INSERT INTO risk_limits(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
