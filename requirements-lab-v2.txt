@@ -1,0 +1,5 @@
+# Optional dependency when the S.A.T.A. package is installed locally.
+ib_async>=2.0
+
+# Existing Lab runtime.
+requests>=2.32
