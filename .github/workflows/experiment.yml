@@ -27,3 +27,4 @@ jobs:
           path: |
             competition.json
             competition.csv
+            xauusd_lab.sqlite
