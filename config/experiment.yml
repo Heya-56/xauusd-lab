@@ -11,6 +11,7 @@ execution:
   mode: paper
   live_orders_enabled: false
   broker: ibkr
+  transport: ib_gateway
 
 risk:
   max_risk_per_trade_pct: 0.25
@@ -23,11 +24,12 @@ instrument:
   symbol: XAUUSD
   asset_class: spot_gold
   currency: USD
-  ibkr_conid_env: IBKR_CONID
+  contract_source: ibkr_gateway
 
 data:
   primary: ibkr
   research_fallback: null
+  transport: ib_gateway
   source: midpoint
   outside_rth: true
   max_timestamp_gap_minutes: 10
