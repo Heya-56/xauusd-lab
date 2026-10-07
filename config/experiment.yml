@@ -1,0 +1,29 @@
+experiment:
+  name: XAUUSD_14H_MWF_001
+  symbol: XAUUSD
+  timezone: Pacific/Tahiti
+  execution_time: "14:00"
+  days: [MON, WED, FRI]
+  timeframe: "5m"
+  max_trades_per_day: 1
+
+execution:
+  mode: backtest
+  live_orders_enabled: false
+
+risk:
+  max_risk_per_trade_pct: 0.25
+  max_daily_loss_pct: 1.0
+  max_open_positions: 1
+  require_spread_check: true
+
+data:
+  primary: ibkr
+  research_fallback: yfinance
+  max_timestamp_gap_minutes: 10
+
+validation:
+  require_out_of_sample: true
+  minimum_trades: 30
+  include_costs: true
+  include_slippage: true
