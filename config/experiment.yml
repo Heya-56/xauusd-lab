@@ -1,25 +1,35 @@
 experiment:
-  name: XAUUSD_14H_MWF_001
+  name: XAUUSD_SPOT_IBKR_001
   symbol: XAUUSD
-  timezone: Pacific/Tahiti
+  timezone: Europe/Paris
   execution_time: "14:00"
   days: [MON, WED, FRI]
   timeframe: "5m"
   max_trades_per_day: 1
 
 execution:
-  mode: backtest
+  mode: paper
   live_orders_enabled: false
+  broker: ibkr
 
 risk:
   max_risk_per_trade_pct: 0.25
   max_daily_loss_pct: 1.0
   max_open_positions: 1
   require_spread_check: true
+  require_whatif_preview: true
+
+instrument:
+  symbol: XAUUSD
+  asset_class: spot_gold
+  currency: USD
+  ibkr_conid_env: IBKR_CONID
 
 data:
   primary: ibkr
-  research_fallback: yfinance
+  research_fallback: null
+  source: midpoint
+  outside_rth: true
   max_timestamp_gap_minutes: 10
 
 validation:
