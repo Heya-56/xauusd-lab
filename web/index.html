@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test Création Bot</title><style>
+body{font-family:system-ui;margin:0;background:#071f1e;color:#f7f4e9}main{max-width:900px;margin:auto;padding:32px}
+h1{color:#d4a72c}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.card{background:#0d302e;border:1px solid #17504c;border-radius:14px;padding:18px}strong{display:block;color:#d4a72c;font-size:1.3rem;margin-top:8px}pre{background:#061716;padding:16px;border-radius:12px;white-space:pre-wrap}
+</style></head><body><main><h1>Test Création Bot</h1><p><b>NE ME CROYEZ PAS. REGARDEZ L’ARCHITECTURE.</b></p>
+<div class="grid"><div class="card">Marché<strong>XAUUSD</strong></div><div class="card">Signal<strong>EMA 20 / 50</strong></div><div class="card">Stop<strong>0,5 ATR</strong></div><div class="card">TP<strong>1R + 2R</strong></div><div class="card">Risque<strong>0,25 %</strong></div><div class="card">Max jour<strong>0,50 %</strong></div></div>
+<h2>Backtest</h2><pre id="r">Chargement…</pre>
+<h2>Qui fait quoi ?</h2><p>TradingView = visualisation et test graphique.</p><p>Python = stratégie, risque et backtest.</p><p>SQL = stockage des données et trades.</p><p>GitHub = code et historique.</p><p>GitHub Actions = tests automatiques.</p><p>Vercel = publication de cette interface légère.</p>
+<script>fetch('/api/backtest').then(r=>r.json()).then(x=>document.getElementById('r').textContent=JSON.stringify({capital_depart:x.starting_capital,capital_final:x.ending_capital,pnl:x.net_pnl,trades:x.trades,win_rate:x.win_rate,profit_factor:x.profit_factor},null,2)).catch(()=>document.getElementById('r').textContent='API indisponible.');</script>
+</main></body></html>
