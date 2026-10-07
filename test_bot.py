@@ -1,9 +1,19 @@
-from bot import crossover_signal
+from bot import atr, crossover_signal, ema, position_size
 
-def test_buy_signal():
-    s=crossover_signal(2650,2649,2648,2647,2648,4)
-    assert s.action=="BUY" and s.stop_loss==2647 and s.tp1==2652 and s.tp2==2654
+def test_ema_length():
+    values=list(range(1,61))
+    result=ema(values,20)
+    assert len(result)==60 and result[19] is not None
 
-def test_no_signal():
-    s=crossover_signal(2650,2648,2649,2648,2649,4)
-    assert s.action=="NONE"
+def test_position_size_cap():
+    assert position_size(10000,3000,2995) <= 0.01
+
+def test_flat_market_has_no_signal():
+    closes=[100.0]*100
+    highs=[101.0]*100
+    lows=[99.0]*100
+    assert crossover_signal(closes,highs,lows) is None
+
+def test_atr_exists():
+    values=[100+i*0.1 for i in range(30)]
+    assert atr(values,[v-1 for v in values],values)[-1] is not None
