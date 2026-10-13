@@ -21,7 +21,7 @@ BAR_MAP = {
 @dataclass(frozen=True)
 class IBKRConfig:
     host: str = os.getenv("IBKR_HOST", "127.0.0.1")
-    port: int = int(os.getenv("IBKR_PORT", "4004"))
+    port: int = int(os.getenv("IBKR_PORT", "4002"))
     client_id: int = int(os.getenv("IBKR_CLIENT_ID", "27"))
     market_data_type: int = int(os.getenv("IBKR_MARKET_DATA_TYPE", "1"))
 
