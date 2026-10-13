@@ -20,4 +20,4 @@ def test_ibkr_backtest_indicators_are_deterministic():
         {"high": 2.0, "low": 1.0, "close": 1.5},
         {"high": 3.0, "low": 1.5, "close": 2.5},
     ]
-    assert atr(rows, 2)[1] == 1.75
+    assert atr(rows, 2)[1] == 1.25
