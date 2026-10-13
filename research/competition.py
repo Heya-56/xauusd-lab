@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 UTC = timezone.utc
 PARIS = ZoneInfo("Europe/Paris")
-SYMBOL = "GC=F"
+SYMBOL = "XAUUSD=X"
 TIMEFRAME = "1h"
 
 def yahoo(symbol=SYMBOL, range_="2y", interval=TIMEFRAME):
@@ -299,14 +299,14 @@ conn.execute(
     (
         run_id,
         datetime.now(UTC).isoformat(),
-        "Yahoo Finance GC=F",
-        "XAUUSD-proxy-GC=F",
+        "Yahoo Finance XAUUSD=X",
+        "XAUUSD-spot-proxy",
         TIMEFRAME,
         "Europe/Paris",
         rows[0]["local"].isoformat() if rows else None,
         rows[-1]["local"].isoformat() if rows else None,
         "v0.2-50-tests",
-        "Research only. GC=F is COMEX gold futures, not spot XAUUSD.",
+        "Research only. Yahoo Finance XAUUSD=X spot proxy; confirm against IBKR spot feed before Paper use.",
     ),
 )
 
@@ -365,7 +365,7 @@ ranking = sorted(summary, key=rank_key, reverse=True)
 payload = {
     "lab": "XAUUSD Lab",
     "run_id": run_id,
-    "source": "Yahoo Finance GC=F (COMEX gold futures proxy, NOT spot XAUUSD)",
+    "source": "Yahoo Finance XAUUSD=X (spot FX ticker; validate against IBKR before Paper use)",
     "timeframe": TIMEFRAME,
     "timezone": "Europe/Paris",
     "protocol": "5 candidate families x 5 France-time entries x 2 horizons = 50 tests; Mon/Wed/Fri; max 1 trade/day/test; ATR 1.2 SL / 1.8 TP",
