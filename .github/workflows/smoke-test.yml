@@ -7,6 +7,7 @@ on:
       - "src/**"
       - "config/**"
       - "tests/**"
+      - "research/**"
       - "requirements.txt"
 
 jobs:
@@ -18,4 +19,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt
+      - run: python -m py_compile research/ibkr_spot_backtest.py
       - run: pytest -q
