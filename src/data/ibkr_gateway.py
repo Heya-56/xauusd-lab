@@ -63,7 +63,7 @@ class IBKRGatewayAdapter(MarketDataAdapter):
                 "contract": {"conId": getattr(c, "conId", None), "secType": c.secType,
                              "symbol": c.symbol, "exchange": c.exchange, "currency": c.currency}}
 
-    def candles(self, symbol="XAUUSD", timeframe="5m", start=None, end=None):
+    def candles(self, symbol="XAUUSD", timeframe="5m", start=None, end=None, duration=None):
         if symbol.upper().replace("/", "") != "XAUUSD":
             raise ValueError("Adapter limité à XAUUSD")
         if timeframe not in BAR_MAP:
@@ -75,7 +75,7 @@ class IBKRGatewayAdapter(MarketDataAdapter):
             if end:
                 end_dt = end.astimezone(timezone.utc).replace(tzinfo=None) if isinstance(end, datetime) else end
             return await self._ib.reqHistoricalDataAsync(
-                c, endDateTime=end_dt, durationStr=BAR_MAP[timeframe][1],
+                c, endDateTime=end_dt, durationStr=duration or BAR_MAP[timeframe][1],
                 barSizeSetting=BAR_MAP[timeframe][0], whatToShow="MIDPOINT",
                 useRTH=False, formatDate=2)
 
