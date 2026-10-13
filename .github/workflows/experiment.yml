@@ -3,7 +3,7 @@ name: XAUUSD Research Competition
 on:
   push:
     paths:
-      - "research/**"
+      - "research/competition.py"
       - ".github/workflows/experiment.yml"
       - "config/**"
   workflow_dispatch:
