@@ -139,12 +139,13 @@ def main():
     r = rsi(closes)
     a = atr(bars)
 
+    macd_fast, macd_slow = ema(closes, 12), ema(closes, 26)
+    macd_line = [x - y for x, y in zip(macd_fast, macd_slow)]
+    macd_signal = ema(macd_line, 9)
+
     def macd(i, rows, cs):
-        fast, slow = ema(cs, 12), ema(cs, 26)
-        m = [x - y for x, y in zip(fast, slow)]
-        sig = ema(m, 9)
-        if m[i] > sig[i] and m[i - 1] <= sig[i - 1]: return "LONG"
-        if m[i] < sig[i] and m[i - 1] >= sig[i - 1]: return "SHORT"
+        if macd_line[i] > macd_signal[i] and macd_line[i - 1] <= macd_signal[i - 1]: return "LONG"
+        if macd_line[i] < macd_signal[i] and macd_line[i - 1] >= macd_signal[i - 1]: return "SHORT"
 
     def trend(i, rows, cs):
         if e50[i] > e200[i] and cs[i] <= e20[i] * 1.002 and r[i] is not None and r[i] < 55: return "LONG"
