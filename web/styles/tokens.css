@@ -1,0 +1,44 @@
+/* Design tokens only. No layout, no business logic. Replace this file to re-brand (white-label). */
+:root {
+  --font-ui: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --bg-0: #070b14;
+  --bg-1: #0c1322;
+  --bg-2: #121b2e;
+  --bg-3: #1a2540;
+  --line: #22304d;
+  --line-strong: #2f4166;
+
+  --text-1: #e8eef9;
+  --text-2: #a7b4cc;
+  --text-3: #6e7f9e;
+
+  --accent: #2ee6d6;          /* teal / cyan */
+  --accent-soft: rgba(46, 230, 214, 0.12);
+  --gold: #e6b84a;
+  --gold-soft: rgba(230, 184, 74, 0.14);
+
+  --buy: #34d399;
+  --buy-soft: rgba(52, 211, 153, 0.14);
+  --sell: #f87171;
+  --sell-soft: rgba(248, 113, 113, 0.14);
+  --neutral: #94a3b8;
+  --neutral-soft: rgba(148, 163, 184, 0.12);
+  --warn: #fbbf24;
+
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --shadow-panel: 0 0 0 1px var(--line), 0 12px 32px -18px rgba(0, 0, 0, 0.8);
+  --glow-accent: 0 0 0 1px var(--accent), 0 0 18px -4px var(--accent);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --dur: 160ms;
+}

@@ -1,0 +1,341 @@
+{
+ "note": "Locked baseline on the SYNTHETIC fixture (seed 7). Update only via reviewed PR.",
+ "rows": [
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "macd_cross",
+   "segment": "all",
+   "trades": 15,
+   "net_points": 4.0912
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "macd_cross",
+   "segment": "in_sample",
+   "trades": 11,
+   "net_points": -30.6434
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "macd_cross",
+   "segment": "out_of_sample",
+   "trades": 4,
+   "net_points": 34.7346
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "rsi_reversion",
+   "segment": "all",
+   "trades": 9,
+   "net_points": 30.8978
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "rsi_reversion",
+   "segment": "in_sample",
+   "trades": 8,
+   "net_points": 17.9898
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "rsi_reversion",
+   "segment": "out_of_sample",
+   "trades": 1,
+   "net_points": 12.908
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "ema_trend",
+   "segment": "all",
+   "trades": 7,
+   "net_points": 30.0062
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "ema_trend",
+   "segment": "in_sample",
+   "trades": 5,
+   "net_points": 22.9277
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "ema_trend",
+   "segment": "out_of_sample",
+   "trades": 2,
+   "net_points": 7.0785
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "fibonacci_pullback",
+   "segment": "all",
+   "trades": 12,
+   "net_points": -1.6307
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "fibonacci_pullback",
+   "segment": "in_sample",
+   "trades": 10,
+   "net_points": 6.4597
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "fibonacci_pullback",
+   "segment": "out_of_sample",
+   "trades": 2,
+   "net_points": -8.0904
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "sr_breakout",
+   "segment": "all",
+   "trades": 19,
+   "net_points": 9.877
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "sr_breakout",
+   "segment": "in_sample",
+   "trades": 13,
+   "net_points": 42.0178
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "sr_breakout",
+   "segment": "out_of_sample",
+   "trades": 6,
+   "net_points": -32.1408
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "combined_all_signals",
+   "segment": "all",
+   "trades": 29,
+   "net_points": 19.3807
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "combined_all_signals",
+   "segment": "in_sample",
+   "trades": 24,
+   "net_points": 18.3009
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "combined_all_signals",
+   "segment": "out_of_sample",
+   "trades": 5,
+   "net_points": 1.0798
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "combined_all_with_filters",
+   "segment": "all",
+   "trades": 29,
+   "net_points": 19.3807
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "combined_all_with_filters",
+   "segment": "in_sample",
+   "trades": 24,
+   "net_points": 18.3009
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "combined_all_with_filters",
+   "segment": "out_of_sample",
+   "trades": 5,
+   "net_points": 1.0798
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "macd_cross",
+   "segment": "all",
+   "trades": 25,
+   "net_points": 50.7996
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "macd_cross",
+   "segment": "in_sample",
+   "trades": 16,
+   "net_points": 17.6678
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "macd_cross",
+   "segment": "out_of_sample",
+   "trades": 9,
+   "net_points": 33.1318
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "rsi_reversion",
+   "segment": "all",
+   "trades": 16,
+   "net_points": 36.3198
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "rsi_reversion",
+   "segment": "in_sample",
+   "trades": 13,
+   "net_points": 43.7933
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "rsi_reversion",
+   "segment": "out_of_sample",
+   "trades": 3,
+   "net_points": -7.4735
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "ema_trend",
+   "segment": "all",
+   "trades": 12,
+   "net_points": 28.7568
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "ema_trend",
+   "segment": "in_sample",
+   "trades": 8,
+   "net_points": 15.7783
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "ema_trend",
+   "segment": "out_of_sample",
+   "trades": 4,
+   "net_points": 12.9785
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "fibonacci_pullback",
+   "segment": "all",
+   "trades": 19,
+   "net_points": -12.3376
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "fibonacci_pullback",
+   "segment": "in_sample",
+   "trades": 13,
+   "net_points": 7.5863
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "fibonacci_pullback",
+   "segment": "out_of_sample",
+   "trades": 6,
+   "net_points": -19.9239
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "sr_breakout",
+   "segment": "all",
+   "trades": 35,
+   "net_points": 8.9007
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "sr_breakout",
+   "segment": "in_sample",
+   "trades": 24,
+   "net_points": 54.9787
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "sr_breakout",
+   "segment": "out_of_sample",
+   "trades": 11,
+   "net_points": -46.078
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "combined_all_signals",
+   "segment": "all",
+   "trades": 48,
+   "net_points": 84.5413
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "combined_all_signals",
+   "segment": "in_sample",
+   "trades": 36,
+   "net_points": 87.5997
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "combined_all_signals",
+   "segment": "out_of_sample",
+   "trades": 12,
+   "net_points": -3.0584
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "combined_all_with_filters",
+   "segment": "all",
+   "trades": 48,
+   "net_points": 84.5413
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "combined_all_with_filters",
+   "segment": "in_sample",
+   "trades": 36,
+   "net_points": 87.5997
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "combined_all_with_filters",
+   "segment": "out_of_sample",
+   "trades": 12,
+   "net_points": -3.0584
+  }
+ ]
+}

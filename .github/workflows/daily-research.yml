@@ -1,0 +1,66 @@
+name: Daily research
+
+on:
+  schedule:
+    - cron: "17 16 * * 1-5"   # 16:17 UTC (06:17 Tahiti), weekdays
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: daily-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyyaml pytest
+
+      - name: 1. Deterministic tests (no network, no API key)
+        run: pytest -q
+
+      - name: 2. Regression check on the synthetic fixture vs locked baseline
+        run: >
+          python research/daily_research.py --mode fixture
+          --out reports/out/fixture
+          --baseline reports/baseline/fixture_baseline.json
+          --fail-on-regression
+
+      - name: 3. Research on verified data (reports DATA_MISSING if none)
+        if: always()
+        run: python research/daily_research.py --mode real --out reports/out/real
+
+      - name: Upload CSV / JSON / Markdown reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-research-${{ github.run_id }}
+          path: reports/out/
+          if-no-files-found: warn
+
+      - name: Open review issue with proposals (never merges or deploys)
+        if: always() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "Automated research run ${{ github.run_id }} on \`${GITHUB_SHA::7}\`."
+            echo
+            echo "Artifacts: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            cat reports/out/real/report.md 2>/dev/null || echo "real report missing"
+            echo
+            cat reports/out/real/proposals.md 2>/dev/null
+            echo
+            echo "_Proposals require human review. Nothing was promoted, merged or deployed._"
+          } > issue.md
+          gh issue create --title "Daily research $(date -u +%F)" --body-file issue.md --label research \
+            || gh issue create --title "Daily research $(date -u +%F)" --body-file issue.md

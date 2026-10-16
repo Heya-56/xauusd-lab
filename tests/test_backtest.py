@@ -52,3 +52,32 @@ def test_split_and_empty_metrics(series, registry):
     assert s["in_sample"]["trades"] + s["out_of_sample"]["trades"] == len(trades)
     assert metrics([])["sample_warning"] == "NO_TRADES"
     assert s["all"]["sample_warning"] == "BELOW_30_TRADES"
+
+
+def test_daily_research_never_fabricates_without_data(tmp_path):
+    from research.daily_research import run
+    res = run("real", tmp_path / "empty", tmp_path / "out", None)
+    assert res["meta"]["status"] == "DATA_MISSING" and res["rows"] == []
+    assert (tmp_path / "out" / "report.md").read_text().count("DATA_MISSING") >= 1
+
+
+def test_daily_research_excludes_futures(tmp_path, series):
+    import json as _j
+    d = tmp_path / "data"
+    d.mkdir()
+    (d / "gc.csv").write_text("ts,open,high,low,close\n" + "\n".join(
+        f"{c.ts},{c.open},{c.high},{c.low},{c.close}" for c in series.candles))
+    (d / "gc.csv.meta.json").write_text(_j.dumps({"symbol": "XAUUSD", "instrument_type": "futures",
+                                                  "timeframe": "M15", "source": "yahoo:GC=F"}))
+    from research.daily_research import run
+    res = run("real", d, tmp_path / "out", None)
+    assert res["meta"]["status"] == "DATA_MISSING"
+    assert any("excluded" in n for n in res["meta"]["data_notes"])
+
+
+def test_daily_research_fixture_matches_locked_baseline(tmp_path):
+    from pathlib import Path
+    from research.daily_research import run
+    base = Path(__file__).resolve().parents[1] / "reports/baseline/fixture_baseline.json"
+    res = run("fixture", tmp_path, tmp_path / "out", base)
+    assert res["regressions"] == []
