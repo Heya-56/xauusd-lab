@@ -44,17 +44,25 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         run: |
-          set -euo pipefail
+          set -uo pipefail
           FROM=$(date -u -d "365 days ago" +%F)
           for SIDE in bid ask; do
-            npx --yes dukascopy-node@1.50.0 -i xauusd -from "$FROM" -to now -t m15 -p $SIDE -v -f csv -dir raw/$SIDE
+            if ! npx --yes dukascopy-node@1.50.0 -i xauusd -from "$FROM" -to now -t m15 -p $SIDE -v -f csv -dir raw/$SIDE > fetch_$SIDE.log 2>&1; then
+              echo "::error title=fetch-$SIDE::$(tail -c 600 fetch_$SIDE.log | tr '\n' ' ')"; exit 1
+            fi
+            echo "::notice title=fetch-$SIDE::$(ls raw/$SIDE) $(wc -l < raw/$SIDE/*.csv) lines; head: $(head -2 raw/$SIDE/*.csv | tr '\n' ' ')"
           done
-          python research/import_dukascopy.py raw/bid/*.csv data/verified/xauusd_m15_dukascopy.csv \
-            --timeframe M15 --side bid --ask raw/ask/*.csv --tool-version dukascopy-node@1.50.0
+          if ! python research/import_dukascopy.py raw/bid/*.csv data/verified/xauusd_m15_dukascopy.csv \
+               --timeframe M15 --side bid --ask raw/ask/*.csv --tool-version dukascopy-node@1.50.0 > import.log 2>&1; then
+            echo "::error title=import::$(tail -c 600 import.log | tr '\n' ' ')"; exit 1
+          fi
+          echo "::notice title=import::$(cat import.log)"
 
       - name: 3. Research on verified data (reports DATA_MISSING if none)
         if: always()
-        run: python research/daily_research.py --mode real --out reports/out/real
+        run: |
+          python research/daily_research.py --mode real --out reports/out/real
+          echo "::notice title=real-report::$(grep -E 'Status|Dataset|Data note' reports/out/real/report.md | tr '\n' ' ')"
 
       - name: Upload CSV / JSON / Markdown reports
         if: always()
