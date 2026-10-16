@@ -55,7 +55,7 @@ const DEFAULT_LAYERS: Record<LayerId, boolean> = {
 const json = (data: unknown, status = 200): Response =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    headers: { ...corsHeaders(), "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
   });
 
 function isFiniteNumber(value: unknown): value is number {
