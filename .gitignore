@@ -9,3 +9,6 @@ __pycache__/
 reports/out/
 data/private/
 .wrangler/
+data/verified/*.csv
+data/verified/*.meta.json
+raw/

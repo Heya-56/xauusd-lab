@@ -22,6 +22,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - run: python -m pip install pyyaml pytest
 
       - name: 1. Deterministic tests (no network, no API key)
@@ -33,6 +36,18 @@ jobs:
           --out reports/out/fixture
           --baseline reports/baseline/fixture_baseline.json
           --fail-on-regression
+
+      - name: 3a. Fetch XAUUSD M15 from Dukascopy (network job, may fail -> DATA_MISSING)
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          FROM=$(date -u -d "365 days ago" +%F)
+          for SIDE in bid ask; do
+            npx --yes dukascopy-node@1.50.0 -i xauusd -from "$FROM" -to now -t m15 -p $SIDE -v -f csv -dir raw/$SIDE
+          done
+          python research/import_dukascopy.py raw/bid/*.csv data/verified/xauusd_m15_dukascopy.csv \
+            --timeframe M15 --side bid --ask raw/ask/*.csv --tool-version dukascopy-node@1.50.0
 
       - name: 3. Research on verified data (reports DATA_MISSING if none)
         if: always()
