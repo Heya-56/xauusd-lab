@@ -42,14 +42,19 @@ jobs:
 
       - name: 3a. Fetch XAUUSD M15 from Dukascopy (network job, may fail -> DATA_MISSING)
         continue-on-error: true
-        timeout-minutes: 15
+        timeout-minutes: 20
+        env:
+          FETCH_DAYS: "30"   # diagnostic window; raise to 365 once the fetch is confirmed
         run: |
           set -uo pipefail
-          FROM=$(date -u -d "365 days ago" +%F)
+          FROM=$(date -u -d "${FETCH_DAYS:-365} days ago" +%F)
+          TO=$(date -u -d "yesterday" +%F)
           for SIDE in bid ask; do
-            if ! npx --yes dukascopy-node@1.50.0 -i xauusd -from "$FROM" -to now -t m15 -p $SIDE -v -f csv -dir raw/$SIDE > fetch_$SIDE.log 2>&1; then
+            if ! npx --yes dukascopy-node@1.50.0 -i xauusd -from "$FROM" -to "$TO" -t m15 -p $SIDE -v -f csv \
+                 -bs 3 -bp 1500 -r 3 -rp 2000 -re -d -dir raw/$SIDE > fetch_$SIDE.log 2>&1; then
               echo "::error title=fetch-$SIDE::$(tail -c 600 fetch_$SIDE.log | tr '\n' ' ')"; exit 1
             fi
+            echo "::notice title=fetch-$SIDE-log::$(grep -v '^\s*$' fetch_$SIDE.log | tail -c 700 | tr '\n' ' ')"
             echo "::notice title=fetch-$SIDE::$(ls raw/$SIDE) $(wc -l < raw/$SIDE/*.csv) lines; head: $(head -2 raw/$SIDE/*.csv | tr '\n' ' ')"
           done
           if ! python research/import_dukascopy.py raw/bid/*.csv data/verified/xauusd_m15_dukascopy.csv \
