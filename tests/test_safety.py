@@ -47,11 +47,20 @@ def test_no_obvious_secrets_committed():
 
 
 def test_mql5_scanner_cannot_trade():
-    """The MT5 scanner is decision-support only: no trading API may appear in its sources."""
+    """Every Hinova EA is decision-support only: no trading API may appear in any MQL5 source."""
     forbidden = re.compile(r"\b(OrderSend|OrderSendAsync|CTrade|PositionOpen|PositionClose)\b|Trade\.mqh")
-    folder = ROOT / "mql5" / "HinovaGoldScanner"
-    files = list(folder.glob("*.mq5")) + list(folder.glob("*.mqh"))
+    files = list((ROOT / "mql5").rglob("*.mq5")) + list((ROOT / "mql5").rglob("*.mqh"))
     assert files, "scanner sources missing"
     for f in files:
         code = "\n".join(l for l in f.read_text(encoding="utf-8").splitlines() if not l.strip().startswith("//"))
         assert not forbidden.search(code), f
+
+
+def test_bridge_ea_emits_every_contract_field():
+    """The MQL5 bridge must write each key of the shared payload fixture (contract drift guard)."""
+    fx = json.loads((ROOT / "mql5/HinovaBridge/payload.example.json").read_text())
+    src = (ROOT / "mql5/HinovaBridge/HinovaBridge.mq5").read_text(encoding="utf-8-sig")
+    keys = set(fx) | set(fx["provenance"]) | set(fx["account"]) | set(fx["candles"][0])
+    missing = [k for k in keys if f'\\"{k}\\"' not in src]
+    assert not missing, missing
+    assert "CopyRates(_Symbol, InpTimeframe, 1," in src          # closed bars only

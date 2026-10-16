@@ -49,7 +49,8 @@ def test_trial_is_seven_days_once_and_server_clock(conn):
     assert start_trial(conn, "tenant_a", NOW + 10) is False
     assert has_feature(conn, "tenant_a", "signals.read", NOW + 7 * DAY - 1)
     assert not has_feature(conn, "tenant_a", "signals.read", NOW + 7 * DAY)
-    assert not has_feature(conn, "tenant_a", "config.write", NOW)
+    assert has_feature(conn, "tenant_a", "config.write", NOW)          # a trial can configure strategies
+    assert not has_feature(conn, "tenant_a", "branding", NOW)
     assert not has_feature(conn, "tenant_b", "signals.read", NOW)
     with pytest.raises(ValueError):
         grant_plan(conn, "tenant_a", "free_forever", NOW, NOW + 1)
@@ -126,8 +127,9 @@ def test_invalid_inputs_rejected(api, series):
 def test_entitlement_expiry_blocks_api(conn, registry, series):
     start_trial(conn, "tenant_a", NOW)
     api = SignalApi(conn, KeyStore({KeyStore.hash_key(KEY_A): "tenant_a"}), registry)
+    api.update_config(KEY_A, {"profile": "intraday"}, now=NOW)
     with pytest.raises(ApiError, match="NOT_ENTITLED:config.write"):
-        api.update_config(KEY_A, {"profile": "intraday"}, now=NOW)
+        api.update_config(KEY_A, {"profile": "intraday"}, now=NOW + 8 * DAY)
     with pytest.raises(ApiError, match="NOT_ENTITLED:signals.read"):
         api.evaluate(KEY_A, body(series), now=NOW + 8 * DAY)
 

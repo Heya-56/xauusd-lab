@@ -149,3 +149,12 @@ def test_toggle_changes_config_hash_only(registry):
     b = cfg(registry, "macd_cross", "rsi_reversion")
     assert a.config_hash != b.config_hash
     assert a.config_hash == cfg(registry, "macd_cross").config_hash
+
+
+def test_broker_phase_accepted_but_phase_change_rejected(series):
+    import dataclasses as dc
+    shifted = CandleSeries(series.provenance, tuple(dc.replace(c, ts=c.ts + 300) for c in series.candles[:200]))
+    assert validate_series(shifted).status is DataStatus.VALID          # constant phase (broker offset)
+    broken = list(series.candles[:200])
+    broken[100] = dc.replace(broken[100], ts=broken[100].ts + 60)
+    assert any(i.startswith("MISALIGNED_TS") for i in validate_series(CandleSeries(series.provenance, tuple(broken))).issues)

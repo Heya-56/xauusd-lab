@@ -116,7 +116,9 @@ def validate_series(series: CandleSeries, *, now_ts: int | None = None,
             continue
         if c.high < max(c.open, c.close) or c.low > min(c.open, c.close) or c.high < c.low:
             issues.append(f"INCOHERENT_OHLC@{i}")
-        if c.ts % step != 0:
+        # Constant phase: M1..H1 bars are normally on exact multiples; broker H4/D1
+        # bars are offset by the broker timezone. Any change of phase is a defect.
+        if c.ts % step != series.candles[0].ts % step:
             issues.append(f"MISALIGNED_TS@{i}")
         if prev_ts is not None:
             if c.ts == prev_ts:
