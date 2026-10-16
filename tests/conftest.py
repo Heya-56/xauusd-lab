@@ -3,7 +3,7 @@ import pytest
 from src.core.registry import StrategyRegistry, validate_config
 from src.data.adapters import SyntheticFixtureAdapter
 
-SIGNAL_IDS = ["macd_cross", "rsi_reversion", "ema_trend", "fibonacci_pullback", "sr_breakout"]
+SIGNAL_IDS = ["macd_cross", "rsi_reversion", "ema_trend", "fibonacci_pullback", "sr_breakout", "ema_slope_distance"]
 
 
 @pytest.fixture(scope="session")

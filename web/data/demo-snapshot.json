@@ -352,6 +352,78 @@
    ]
   },
   {
+   "strategy_id": "ema_slope_distance",
+   "version": "1.0.0",
+   "name": "EMA slope + distance (MIT idea, re-implemented)",
+   "description": "Trigger when |close-EMA| and |EMA slope| both exceed thresholds within a short window; trade in the direction of close vs EMA. ATR stop always set.",
+   "role": "signal",
+   "available": true,
+   "unavailable_reason": "",
+   "timeframes": [
+    "M15",
+    "H1",
+    "H4"
+   ],
+   "params": [
+    {
+     "name": "ema_period",
+     "type": "int",
+     "default": 85,
+     "min": 10,
+     "max": 400,
+     "description": ""
+    },
+    {
+     "name": "distance_threshold",
+     "type": "float",
+     "default": 3.5,
+     "min": 0.1,
+     "max": 100.0,
+     "description": "Min |close-EMA| in price units"
+    },
+    {
+     "name": "slope_threshold",
+     "type": "float",
+     "default": 0.225,
+     "min": 0.01,
+     "max": 20.0,
+     "description": "Min |EMA[i]-EMA[i-1]| in price units"
+    },
+    {
+     "name": "monitor_bars",
+     "type": "int",
+     "default": 1,
+     "min": 1,
+     "max": 20,
+     "description": "Bars the trigger stays armed"
+    },
+    {
+     "name": "atr_period",
+     "type": "int",
+     "default": 14,
+     "min": 5,
+     "max": 50,
+     "description": "ATR period for stop proposal"
+    },
+    {
+     "name": "stop_atr_mult",
+     "type": "float",
+     "default": 1.5,
+     "min": 0.5,
+     "max": 5.0,
+     "description": "Stop distance in ATR"
+    },
+    {
+     "name": "reward_risk",
+     "type": "float",
+     "default": 1.5,
+     "min": 0.5,
+     "max": 5.0,
+     "description": "Target distance / stop distance"
+    }
+   ]
+  },
+  {
    "strategy_id": "sata_mql5_parity",
    "version": "0.0.0",
    "name": "S.A.T.A. EA parity",
@@ -430,6 +502,7 @@
     "fibonacci_pullback",
     "sr_breakout",
     "atr_regime",
+    "ema_slope_distance",
     "sata_mql5_parity"
    ],
    "risk": {
@@ -464,7 +537,8 @@
     "ema_trend",
     "fibonacci_pullback",
     "sr_breakout",
-    "atr_regime"
+    "atr_regime",
+    "ema_slope_distance"
    ],
    "risk": {
     "max_risk_per_trade_pct": 0.25,
@@ -500,6 +574,7 @@
     "fibonacci_pullback",
     "sr_breakout",
     "atr_regime",
+    "ema_slope_distance",
     "sata_mql5_parity"
    ],
    "risk": {
@@ -520,7 +595,7 @@
    "sr_breakout",
    "atr_regime"
   ],
-  "config_hash": "1659b1c1f8ccd32582349a96"
+  "config_hash": "c36a0cc50363a71125da1349"
  },
  "candles": [
   {
@@ -1976,7 +2051,7 @@
    "SYNTHETIC_FIXTURE_NOT_MARKET_DATA",
    "NO_VALID_SIGNAL"
   ],
-  "config_hash": "1659b1c1f8ccd32582349a96",
+  "config_hash": "c36a0cc50363a71125da1349",
   "data_hash": "f11f8032061c3eb0f5d04aa8",
   "mode": "research",
   "agent_review": {

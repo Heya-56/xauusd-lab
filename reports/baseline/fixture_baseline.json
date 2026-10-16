@@ -1,5 +1,5 @@
 {
- "note": "Locked baseline on the SYNTHETIC fixture (seed 7). Update only via reviewed PR.",
+ "note": "Locked baseline on the SYNTHETIC fixture (seed 7). Update only via reviewed PR. 2026-10-16: combined candidates now include ema_slope_distance.",
  "rows": [
   {
    "dataset": "synthetic-seed-7",
@@ -124,50 +124,74 @@
   {
    "dataset": "synthetic-seed-7",
    "profile": "intraday",
+   "candidate": "ema_slope_distance",
+   "segment": "all",
+   "trades": 24,
+   "net_points": 14.9647
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "ema_slope_distance",
+   "segment": "in_sample",
+   "trades": 17,
+   "net_points": 9.0479
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
+   "candidate": "ema_slope_distance",
+   "segment": "out_of_sample",
+   "trades": 7,
+   "net_points": 5.9168
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "intraday",
    "candidate": "combined_all_signals",
    "segment": "all",
-   "trades": 29,
-   "net_points": 19.3807
+   "trades": 37,
+   "net_points": -51.845
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "intraday",
    "candidate": "combined_all_signals",
    "segment": "in_sample",
-   "trades": 24,
-   "net_points": 18.3009
+   "trades": 27,
+   "net_points": -28.9847
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "intraday",
    "candidate": "combined_all_signals",
    "segment": "out_of_sample",
-   "trades": 5,
-   "net_points": 1.0798
+   "trades": 10,
+   "net_points": -22.8603
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "intraday",
    "candidate": "combined_all_with_filters",
    "segment": "all",
-   "trades": 29,
-   "net_points": 19.3807
+   "trades": 37,
+   "net_points": -51.845
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "intraday",
    "candidate": "combined_all_with_filters",
    "segment": "in_sample",
-   "trades": 24,
-   "net_points": 18.3009
+   "trades": 27,
+   "net_points": -28.9847
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "intraday",
    "candidate": "combined_all_with_filters",
    "segment": "out_of_sample",
-   "trades": 5,
-   "net_points": 1.0798
+   "trades": 10,
+   "net_points": -22.8603
   },
   {
    "dataset": "synthetic-seed-7",
@@ -292,50 +316,74 @@
   {
    "dataset": "synthetic-seed-7",
    "profile": "custom",
+   "candidate": "ema_slope_distance",
+   "segment": "all",
+   "trades": 43,
+   "net_points": -12.0779
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "ema_slope_distance",
+   "segment": "in_sample",
+   "trades": 32,
+   "net_points": -23.5041
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
+   "candidate": "ema_slope_distance",
+   "segment": "out_of_sample",
+   "trades": 11,
+   "net_points": 11.4262
+  },
+  {
+   "dataset": "synthetic-seed-7",
+   "profile": "custom",
    "candidate": "combined_all_signals",
    "segment": "all",
-   "trades": 48,
-   "net_points": 84.5413
+   "trades": 56,
+   "net_points": -31.6008
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "custom",
    "candidate": "combined_all_signals",
    "segment": "in_sample",
-   "trades": 36,
-   "net_points": 87.5997
+   "trades": 40,
+   "net_points": -46.1993
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "custom",
    "candidate": "combined_all_signals",
    "segment": "out_of_sample",
-   "trades": 12,
-   "net_points": -3.0584
+   "trades": 16,
+   "net_points": 14.5985
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "custom",
    "candidate": "combined_all_with_filters",
    "segment": "all",
-   "trades": 48,
-   "net_points": 84.5413
+   "trades": 56,
+   "net_points": -31.6008
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "custom",
    "candidate": "combined_all_with_filters",
    "segment": "in_sample",
-   "trades": 36,
-   "net_points": 87.5997
+   "trades": 40,
+   "net_points": -46.1993
   },
   {
    "dataset": "synthetic-seed-7",
    "profile": "custom",
    "candidate": "combined_all_with_filters",
    "segment": "out_of_sample",
-   "trades": 12,
-   "net_points": -3.0584
+   "trades": 16,
+   "net_points": 14.5985
   }
  ]
 }
