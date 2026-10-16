@@ -1,0 +1,57 @@
+{
+  "_comment": "Trading profiles are configurations, not engines. Risk values reuse the existing lab defaults (config/experiment.yml). Costs are modelling assumptions to be replaced by broker-measured values.",
+  "profiles": {
+    "scalping": {
+      "label": "Scalping",
+      "timeframes": {"bias": "M15", "setup": "M5", "trigger": "M1"},
+      "decision_timeframe": "M5",
+      "session_utc": {"start_hour": 7, "end_hour": 20},
+      "max_data_age_seconds": 120,
+      "max_spread": 0.35,
+      "costs": {"spread": 0.30, "slippage": 0.10, "commission": 0.0},
+      "max_holding_bars": 24,
+      "eligible_strategies": ["macd_cross", "rsi_reversion", "sr_breakout", "atr_regime"],
+      "risk": {"max_risk_per_trade_pct": 0.25, "max_open_positions": 1, "max_daily_loss_pct": 1.0},
+      "mode": "research"
+    },
+    "intraday": {
+      "label": "Intraday",
+      "timeframes": {"bias": "H4", "setup": "H1", "trigger": "M15"},
+      "decision_timeframe": "M15",
+      "session_utc": {"start_hour": 6, "end_hour": 21},
+      "max_data_age_seconds": 1800,
+      "max_spread": 0.50,
+      "costs": {"spread": 0.30, "slippage": 0.10, "commission": 0.0},
+      "max_holding_bars": 32,
+      "eligible_strategies": ["macd_cross", "rsi_reversion", "ema_trend", "fibonacci_pullback", "sr_breakout", "atr_regime", "sata_mql5_parity"],
+      "risk": {"max_risk_per_trade_pct": 0.25, "max_open_positions": 1, "max_daily_loss_pct": 1.0},
+      "mode": "research"
+    },
+    "swing": {
+      "label": "Swing",
+      "timeframes": {"bias": "D1", "setup": "H4", "trigger": "M15"},
+      "decision_timeframe": "H4",
+      "session_utc": {"start_hour": 0, "end_hour": 24},
+      "max_data_age_seconds": 21600,
+      "max_spread": 0.80,
+      "costs": {"spread": 0.30, "slippage": 0.15, "commission": 0.0},
+      "max_holding_bars": 30,
+      "eligible_strategies": ["macd_cross", "ema_trend", "fibonacci_pullback", "sr_breakout", "atr_regime"],
+      "risk": {"max_risk_per_trade_pct": 0.25, "max_open_positions": 1, "max_daily_loss_pct": 1.0},
+      "mode": "research"
+    },
+    "custom": {
+      "label": "Personnalisé",
+      "timeframes": {"bias": "H1", "setup": "M15", "trigger": "M15"},
+      "decision_timeframe": "M15",
+      "session_utc": {"start_hour": 0, "end_hour": 24},
+      "max_data_age_seconds": 1800,
+      "max_spread": 0.50,
+      "costs": {"spread": 0.30, "slippage": 0.10, "commission": 0.0},
+      "max_holding_bars": 32,
+      "eligible_strategies": ["macd_cross", "rsi_reversion", "ema_trend", "fibonacci_pullback", "sr_breakout", "atr_regime", "sata_mql5_parity"],
+      "risk": {"max_risk_per_trade_pct": 0.25, "max_open_positions": 1, "max_daily_loss_pct": 1.0},
+      "mode": "research"
+    }
+  }
+}

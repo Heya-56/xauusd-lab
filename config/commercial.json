@@ -1,0 +1,9 @@
+{
+  "_comment": "Entitlement policy only. Prices and contractual terms (e.g. the proposed white-label licence) live in signed contracts, never in code or engine config.",
+  "trial_days": 7,
+  "plans": {
+    "trial": {"features": ["dashboard", "research", "signals.read"]},
+    "subscription": {"features": ["dashboard", "research", "signals.read", "config.write"]},
+    "white_label": {"features": ["dashboard", "research", "signals.read", "config.write", "branding"]}
+  }
+}
