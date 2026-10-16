@@ -2190,6 +2190,23 @@
     "total_costs": 7.5,
     "exposure_pct": 23.67,
     "sample_warning": "BELOW_30_TRADES"
+   },
+   "score": {
+    "score": 0.0,
+    "raw_score": 5.09,
+    "tier": "REJECTED",
+    "gates": [
+     "SYNTHETIC_DATA"
+    ],
+    "components": {
+     "oos_expectancy_r": 3.0,
+     "oos_profit_factor": 2.0,
+     "stability": 0.0,
+     "recovery_factor": 0.091,
+     "sample_size": 0.0
+    },
+    "score_version": "score_v1",
+    "eligible_for": null
    }
   },
   "rsi_reversion": {
@@ -2236,6 +2253,23 @@
     "total_costs": 4.5,
     "exposure_pct": 11.0,
     "sample_warning": "BELOW_30_TRADES"
+   },
+   "score": {
+    "score": 0.0,
+    "raw_score": 8.82,
+    "tier": "REJECTED",
+    "gates": [
+     "SYNTHETIC_DATA"
+    ],
+    "components": {
+     "oos_expectancy_r": 3.0,
+     "oos_profit_factor": 2.0,
+     "stability": 2.0,
+     "recovery_factor": 1.82,
+     "sample_size": 0.0
+    },
+    "score_version": "score_v1",
+    "eligible_for": null
    }
   },
   "ema_trend": {
@@ -2282,6 +2316,23 @@
     "total_costs": 3.5,
     "exposure_pct": 12.17,
     "sample_warning": "BELOW_30_TRADES"
+   },
+   "score": {
+    "score": 0.0,
+    "raw_score": 7.97,
+    "tier": "REJECTED",
+    "gates": [
+     "SYNTHETIC_DATA"
+    ],
+    "components": {
+     "oos_expectancy_r": 2.446,
+     "oos_profit_factor": 1.913,
+     "stability": 1.974,
+     "recovery_factor": 1.641,
+     "sample_size": 0.0
+    },
+    "score_version": "score_v1",
+    "eligible_for": null
    }
   },
   "fibonacci_pullback": {
@@ -2328,6 +2379,23 @@
     "total_costs": 6.0,
     "exposure_pct": 11.67,
     "sample_warning": "BELOW_30_TRADES"
+   },
+   "score": {
+    "score": 0.0,
+    "raw_score": 0.0,
+    "tier": "REJECTED",
+    "gates": [
+     "SYNTHETIC_DATA"
+    ],
+    "components": {
+     "oos_expectancy_r": 0.0,
+     "oos_profit_factor": 0.0,
+     "stability": 0.0,
+     "recovery_factor": 0.0,
+     "sample_size": 0.0
+    },
+    "score_version": "score_v1",
+    "eligible_for": null
    }
   },
   "sr_breakout": {
@@ -2374,6 +2442,23 @@
     "total_costs": 9.5,
     "exposure_pct": 28.67,
     "sample_warning": "BELOW_30_TRADES"
+   },
+   "score": {
+    "score": 0.0,
+    "raw_score": 0.16,
+    "tier": "REJECTED",
+    "gates": [
+     "SYNTHETIC_DATA"
+    ],
+    "components": {
+     "oos_expectancy_r": 0.0,
+     "oos_profit_factor": 0.0,
+     "stability": 0.0,
+     "recovery_factor": 0.161,
+     "sample_size": 0.0
+    },
+    "score_version": "score_v1",
+    "eligible_for": null
    }
   }
  }

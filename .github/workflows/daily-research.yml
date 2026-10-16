@@ -9,7 +9,7 @@ on:
     paths: ["src/**", "research/**", "config/**", ".github/workflows/daily-research.yml"]
 
 permissions:
-  contents: read
+  contents: write   # only used to append to the dedicated research-history branch
   issues: write
 
 concurrency:
@@ -70,8 +70,26 @@ jobs:
       - name: 3. Research on verified data (reports DATA_MISSING if none)
         if: always()
         run: |
-          python research/daily_research.py --mode real --out reports/out/real
+          python research/daily_research.py --mode real --out reports/out/real --history history/scores.jsonl
           echo "::notice title=real-report::$(grep -E 'Status|Dataset|Data note' reports/out/real/report.md | tr '\n' ' ')"
+
+      - name: Append score history to the research-history branch (never main)
+        if: always() && github.event_name != 'push'
+        run: |
+          set -e
+          git config user.name "hinova-research-bot"
+          git config user.email "research-bot@users.noreply.github.com"
+          git fetch origin research-history:research-history 2>/dev/null || true
+          cp history/scores.jsonl /tmp/new_entry.jsonl
+          if git show-ref --verify --quiet refs/heads/research-history; then
+            git worktree add /tmp/hist research-history
+          else
+            git worktree add --detach /tmp/hist && cd /tmp/hist && git checkout --orphan research-history && git rm -rfq . && cd -
+          fi
+          mkdir -p /tmp/hist/history /tmp/hist/runs/${{ github.run_id }}
+          cat /tmp/new_entry.jsonl >> /tmp/hist/history/scores.jsonl
+          cp reports/out/real/scores.csv reports/out/real/retained_strategies.json reports/out/real/report.md /tmp/hist/runs/${{ github.run_id }}/
+          cd /tmp/hist && git add -A && git commit -qm "research history: run ${{ github.run_id }}" && git push origin HEAD:research-history
 
       - name: Upload CSV / JSON / Markdown reports
         if: always()

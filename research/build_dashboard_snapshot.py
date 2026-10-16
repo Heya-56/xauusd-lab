@@ -19,6 +19,7 @@ from src.core.contracts import Decision  # noqa: E402
 from src.core.engine import evaluate  # noqa: E402
 from src.core.registry import StrategyRegistry, load_profiles, validate_config  # noqa: E402
 from src.core.risk_gate import AccountState  # noqa: E402
+from src.core.scoring import score_strategy  # noqa: E402
 from src.data.adapters import SyntheticFixtureAdapter  # noqa: E402
 from src.data.ohlc import validate_series  # noqa: E402
 
@@ -44,6 +45,7 @@ def build() -> dict:
             continue
         one = validate_config({"profile": "intraday", "strategies": {sid: {"enabled": True}}}, reg)
         perf[sid] = split_metrics(run_backtest(series, one, reg, allow_synthetic=True), series)
+        perf[sid]["score"] = score_strategy(perf[sid], synthetic=True)
     q = validate_series(series)
     return {
         "snapshot_kind": "DEMO_SYNTHETIC_FIXTURE",

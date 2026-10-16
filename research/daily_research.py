@@ -28,6 +28,7 @@ from src.core.backtest import run_backtest, split_metrics  # noqa: E402
 from src.core.contracts import InstrumentType  # noqa: E402
 from src.core.engine import AGGREGATION_RULE  # noqa: E402
 from src.core.registry import StrategyRegistry, load_profiles, validate_config  # noqa: E402
+from src.core.scoring import RETAIN_THRESHOLD, SCORE_VERSION, WATCH_THRESHOLD, score_strategy  # noqa: E402
 from src.data.adapters import CsvFileAdapter, DataUnavailable, SyntheticFixtureAdapter  # noqa: E402
 from src.data.ohlc import validate_series  # noqa: E402
 
@@ -80,7 +81,8 @@ def candidates_for(profile_name: str, profile: dict, registry: StrategyRegistry)
     return out
 
 
-def run(mode: str, data_dir: Path, out: Path, baseline_path: Path | None) -> dict:
+def run(mode: str, data_dir: Path, out: Path, baseline_path: Path | None,
+        history_path: Path | None = None) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     registry, profiles = StrategyRegistry(), load_profiles()
     datasets, notes = load_datasets(mode, data_dir)
@@ -88,6 +90,7 @@ def run(mode: str, data_dir: Path, out: Path, baseline_path: Path | None) -> dic
             "aggregation_rule": AGGREGATION_RULE, "data_notes": notes,
             "strategy_versions": {d["strategy_id"]: d["version"] for d in registry.catalog()}}
     rows: list[dict] = []
+    scores: list[dict] = []
     if not datasets:
         meta["status"] = "DATA_MISSING"
     else:
@@ -108,6 +111,12 @@ def run(mode: str, data_dir: Path, out: Path, baseline_path: Path | None) -> dic
                     trades = run_backtest(series, config, registry,
                                           allow_synthetic=(mode == "fixture"))
                     split = split_metrics(trades, series)
+                    sc = score_strategy(split, synthetic=(p.instrument_type is InstrumentType.SYNTHETIC))
+                    scores.append({"dataset": name, "data_hash": series.data_hash(), "profile": pname,
+                                   "candidate": cand, "strategies": ids,
+                                   "strategy_versions": {i: meta["strategy_versions"][i] for i in ids},
+                                   "config_hash": config.config_hash, "trades": split["all"]["trades"],
+                                   "oos_trades": split["out_of_sample"]["trades"], **sc})
                     for seg in ("all", "in_sample", "out_of_sample"):
                         rows.append({"dataset": name, "instrument_type": p.instrument_type.value,
                                      "timeframe": p.timeframe, "profile": pname, "candidate": cand,
@@ -115,7 +124,52 @@ def run(mode: str, data_dir: Path, out: Path, baseline_path: Path | None) -> dic
     regressions = compare_baseline(rows, baseline_path) if baseline_path else []
     proposals = make_proposals(rows, regressions, meta)
     write_outputs(out, meta, rows, regressions, proposals)
-    return {"meta": meta, "rows": rows, "regressions": regressions, "proposals": proposals}
+    write_scores(out, meta, scores)
+    if history_path is not None:
+        append_history(history_path, meta, scores)
+    return {"meta": meta, "rows": rows, "regressions": regressions, "proposals": proposals,
+            "scores": scores}
+
+
+def write_scores(out: Path, meta: dict, scores: list[dict]) -> None:
+    """scores.csv + retained_strategies.json (score >= 6, eligible for PAPER trading only)."""
+    cols = ["dataset", "profile", "candidate", "score", "tier", "trades", "oos_trades", "gates", "score_version"]
+    with (out / "scores.csv").open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(cols)
+        for s in sorted(scores, key=lambda x: -x["score"]):
+            w.writerow([s[c] if c != "gates" else "|".join(s["gates"]) for c in cols])
+    retained = [s for s in scores if s["tier"] == "RETAINED"]
+    (out / "retained_strategies.json").write_text(json.dumps({
+        "generated_at": meta["generated_at"], "git_sha": meta["git_sha"], "mode": meta["mode"],
+        "score_version": SCORE_VERSION, "retain_threshold": RETAIN_THRESHOLD,
+        "use": "paper_trading_only — live trading requires a separate human decision",
+        "retained": retained}, indent=2))
+    lines = ["", "## Strategy scores (0-10, deterministic)", "",
+             f"Rejected < {WATCH_THRESHOLD} · Watch (orange) {WATCH_THRESHOLD}-{RETAIN_THRESHOLD} · "
+             f"Retained (green) >= {RETAIN_THRESHOLD} → paper trading only.", ""]
+    if not scores:
+        lines.append("- No score: no verified data.")
+    else:
+        lines += ["| tier | score | profile | candidate | trades | OOS | gates |", "|---|---|---|---|---|---|---|"]
+        for s in sorted(scores, key=lambda x: -x["score"]):
+            lines.append(f"| {s['tier']} | {s['score']} | {s['profile']} | {s['candidate']} | "
+                         f"{s['trades']} | {s['oos_trades']} | {', '.join(s['gates'])} |")
+    with (out / "report.md").open("a") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
+def append_history(path: Path, meta: dict, scores: list[dict]) -> None:
+    """Append-only JSON Lines history: one line per run, never rewritten."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    entry = {"generated_at": meta["generated_at"], "git_sha": meta["git_sha"], "mode": meta["mode"],
+             "status": meta["status"], "score_version": SCORE_VERSION,
+             "datasets": [d["data_hash"] for d in meta.get("datasets", [])],
+             "scores": [{k: s[k] for k in ("dataset", "profile", "candidate", "score", "tier",
+                                           "trades", "oos_trades", "config_hash", "strategy_versions")}
+                        for s in scores]}
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry, sort_keys=True) + "\n")
 
 
 def compare_baseline(rows: list[dict], baseline_path: Path) -> list[str]:
@@ -201,10 +255,15 @@ def main() -> int:
     ap.add_argument("--out", default=str(ROOT / "reports" / "out"))
     ap.add_argument("--baseline", default=None)
     ap.add_argument("--fail-on-regression", action="store_true")
+    ap.add_argument("--history", default=None, help="append-only JSONL score history")
     a = ap.parse_args()
-    res = run(a.mode, Path(a.data_dir), Path(a.out), Path(a.baseline) if a.baseline else None)
+    res = run(a.mode, Path(a.data_dir), Path(a.out), Path(a.baseline) if a.baseline else None,
+              Path(a.history) if a.history else None)
+    tiers = {}
+    for s in res["scores"]:
+        tiers[s["tier"]] = tiers.get(s["tier"], 0) + 1
     print(json.dumps({"status": res["meta"]["status"], "rows": len(res["rows"]),
-                      "regressions": res["regressions"]}, indent=2))
+                      "tiers": tiers, "regressions": res["regressions"]}, indent=2))
     if a.fail_on_regression and res["regressions"]:
         return 2
     return 0

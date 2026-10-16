@@ -81,3 +81,16 @@ def test_daily_research_fixture_matches_locked_baseline(tmp_path):
     base = Path(__file__).resolve().parents[1] / "reports/baseline/fixture_baseline.json"
     res = run("fixture", tmp_path, tmp_path / "out", base)
     assert res["regressions"] == []
+
+
+def test_history_is_append_only_and_shortlist_paper_only(tmp_path):
+    import json as _j
+    from research.daily_research import run
+    hist = tmp_path / "h" / "scores.jsonl"
+    run("fixture", tmp_path, tmp_path / "o1", None, hist)
+    run("real", tmp_path / "none", tmp_path / "o2", None, hist)
+    lines = hist.read_text().splitlines()
+    assert len(lines) == 2 and _j.loads(lines[1])["status"] == "DATA_MISSING"
+    shortlist = _j.loads((tmp_path / "o1" / "retained_strategies.json").read_text())
+    assert shortlist["retained"] == [] and "paper_trading_only" in shortlist["use"]
+    assert all(s["score"] == 0.0 for s in _j.loads(lines[0])["scores"])   # synthetic never qualifies

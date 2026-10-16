@@ -115,10 +115,18 @@ export function recentSignals(list) {
     list.slice().reverse().map((s) => `<tr><td>${fmtTs(s.ts)}</td><td><span class="badge" data-tone="${tone(s.decision)}">${esc(s.decision)}</span></td><td class="num">${num(s.price)}</td></tr>`).join("")}</tbody></table>`;
 }
 
+const TIER = { RETAINED: ["buy", "Retenue · paper"], WATCH: ["gold", "À surveiller"], REJECTED: ["sell", "Rejetée"] };
+
+export function scoreBadge(sc) {
+  if (!sc) return "";
+  const [t, label] = TIER[sc.tier] || ["", sc.tier];
+  return `<span class="badge" data-tone="${t}" title="${esc(sc.gates.join(", "))}">${num(sc.score, 1)}/10 · ${label}</span>`;
+}
+
 export function performance(perf) {
   const rows = Object.entries(perf).flatMap(([sid, m]) => ["all", "in_sample", "out_of_sample"].map((seg) => {
     const r = m[seg], cls = r.expectancy > 0 ? "pos" : (r.expectancy < 0 ? "neg" : "");
-    return `<tr><td>${seg === "all" ? esc(sid) : ""}</td><td>${{ all: "total", in_sample: "IS", out_of_sample: "OOS" }[seg]}</td>
+    return `<tr><td>${seg === "all" ? `${esc(sid)}<br>${scoreBadge(m.score)}` : ""}</td><td>${{ all: "total", in_sample: "IS", out_of_sample: "OOS" }[seg]}</td>
       <td class="num">${r.trades}</td><td class="num ${cls}">${num(r.expectancy)}</td><td class="num">${num(r.profit_factor)}</td>
       <td class="num">${num(r.max_drawdown_points)}</td><td>${r.sample_warning ? `<span class="badge" data-tone="warn">${esc(r.sample_warning)}</span>` : ""}</td></tr>`;
   }));

@@ -90,13 +90,30 @@ def deterministic_review(record: SignalRecord) -> list[dict]:
     return out
 
 
-def run_review(record: SignalRecord, llm: LLMAdapter | None = None, timeout_s: float = 10.0) -> dict:
-    """Attach an advisory review. Never alters record.decision or record.risk."""
+def _estimate_tokens(payload: dict) -> int:
+    import json as _json
+    return len(_json.dumps(payload, default=str)) // 4 + 1
+
+
+def run_review(record: SignalRecord, llm: LLMAdapter | None = None, timeout_s: float = 10.0,
+               budget=None, now: int | None = None) -> dict:
+    """Attach an advisory review. Never alters record.decision or record.risk.
+
+    An LLM is only called if one is supplied AND the AIBudget authorizes the call
+    (AI enabled in config/ai_policy.json, task allowed, daily caps not exceeded).
+    """
     source, raw = "deterministic", None
     if llm is not None:
+        from src.agents.budget import AIBudget, BudgetExceeded, load_policy
+        budget = budget or AIBudget(load_policy())
+        payload = record.to_dict()
         try:
-            raw = llm.review(record.to_dict(), timeout_s)
+            budget.authorize("review_signal", _estimate_tokens(payload), now or record.as_of_ts)
+            raw = llm.review(payload, min(timeout_s, budget.policy["timeout_seconds"]))
             source = f"llm:{llm.name}"
+        except BudgetExceeded as exc:
+            source = f"deterministic_budget:{exc}"
+            raw = None
         except Exception as exc:  # outage, timeout, quota -> deterministic fallback
             source = f"deterministic_fallback:{type(exc).__name__}"
             raw = None

@@ -1,0 +1,10 @@
+{
+  "_comment": "AI is OFF by default. Prices, indicators, risk, scores and backtests never use AI. If enabled, AI may only summarise existing results, within hard budgets. Changing this file is a reviewed code change.",
+  "enabled": false,
+  "allowed_tasks": ["review_signal", "summarize_report"],
+  "max_calls_per_day": 20,
+  "max_input_tokens_per_call": 4000,
+  "max_output_tokens_per_call": 800,
+  "max_tokens_per_day": 60000,
+  "timeout_seconds": 10
+}

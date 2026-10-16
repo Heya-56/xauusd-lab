@@ -29,7 +29,7 @@ python -m http.server 8000 --directory web                    # dashboard (demo,
 - [Audit 2026-10-15](docs/AUDIT-2026-10-15.md) — baseline, risks found, new architecture
 - [MQL5 audit status](docs/MQL5-STRATEGY-AUDIT.md) — source missing, files requested
 - [EA ↔ API contract](docs/EA-BRIDGE-CONTRACT.md) · [Cloudflare deployment & rollback](docs/DEPLOYMENT-CLOUDFLARE.md)
-- [Verified data format](data/verified/README.md)
+- [Verified data format](data/verified/README.md) · [Score 0-10 and AI policy](docs/SCORING-AND-AI-POLICY.md)
 
 ## Data-source status — read before interpreting results
 
