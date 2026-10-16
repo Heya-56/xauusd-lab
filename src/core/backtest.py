@@ -39,17 +39,22 @@ class Trade:
 
 
 def run_backtest(series: CandleSeries, config: ValidatedConfig, registry: StrategyRegistry, *,
-                 allow_synthetic: bool = False, start_index: int | None = None) -> list[Trade]:
+                 allow_synthetic: bool = False, start_index: int | None = None,
+                 end_index: int | None = None) -> list[Trade]:
+    """Simulate entries on decision candles in [start_index, end_index); exits may use later bars
+    up to the end of `series`. Lookback = max(LOOKBACK, largest strategy warm-up)."""
     costs = config.profile["costs"]
     half_spread = costs["spread"] / 2
     slip, comm = costs["slippage"], costs["commission"]
     max_hold = config.profile["max_holding_bars"]
     c = series.candles
     trades: list[Trade] = []
+    lookback = max([LOOKBACK] + [s.warmup() + 5 for s in config.instantiate(registry)])
+    last_entry = (end_index if end_index is not None else len(c)) - 1
     i = start_index if start_index is not None else 1
-    while i < len(c) - 1:
+    while i < min(len(c) - 1, last_entry + 1):
         spread_now = c[i].spread if c[i].spread is not None else costs["spread"]
-        rec = evaluate(series.window(i, LOOKBACK), config, registry,
+        rec = evaluate(series.window(i, lookback), config, registry,
                        account=AccountState(open_positions=0, current_spread=spread_now),
                        allow_synthetic=allow_synthetic)
         if rec.decision is Decision.NO_TRADE:

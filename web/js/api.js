@@ -1,11 +1,23 @@
 // Data access only. The browser never computes signals; it reads server output.
-// API_BASE empty => offline demo mode reading the synthetic snapshot.
-export const API_BASE = (window.HINOVA_API_BASE || "").replace(/\/$/, "");
+// No API configured, or not signed in => offline demo on the synthetic snapshot.
+export const API_BASE = (window.HINOVA_ACCOUNTS_API || window.HINOVA_API_BASE || "").replace(/\/$/, "");
+
+async function demo(reason) {
+  const res = await fetch("data/demo-snapshot.json", { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(`snapshot ${res.status}`);
+  return { ...(await res.json()), demo_reason: reason };
+}
 
 export async function loadSnapshot() {
-  const url = API_BASE ? `${API_BASE}/v1/dashboard` : "data/demo-snapshot.json";
-  const res = await fetch(url, { headers: { Accept: "application/json" }, credentials: "include" });
-  if (!res.ok) throw new Error(`snapshot ${res.status}`);
+  if (!API_BASE) return demo("API_NOT_CONFIGURED");
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/v1/dashboard`, { headers: { Accept: "application/json" }, credentials: "include" });
+  } catch {
+    return demo("NETWORK_ERROR");
+  }
+  if (res.status === 401) return demo("NOT_SIGNED_IN");
+  if (!res.ok) throw new Error(`dashboard ${res.status}`);
   return res.json();
 }
 

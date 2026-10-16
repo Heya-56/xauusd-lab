@@ -17,7 +17,8 @@ async function main() {
   const sig = snap.latest_signal;
 
   $("mode-badges").innerHTML = C.modeBadges(snap);
-  if (snap.disclaimer) { $("data-banner").hidden = false; $("data-banner").textContent = snap.disclaimer; }
+  const banner = C.demoMessage(snap);
+  if (banner) { $("data-banner").hidden = false; $("data-banner").textContent = banner; }
   $("decision").dataset.decision = sig.decision;
   $("decision").innerHTML = C.decision(sig);
   $("dec-time").textContent = `profil ${sig.profile} · ${sig.timeframe}`;
@@ -56,6 +57,7 @@ async function main() {
   $("draft-submit").addEventListener("click", async () => {
     const payload = state.payload();
     const res = await submitConfig(payload);
+    if (res.status === "stored") { window.location.reload(); return; }
     $("draft-payload").hidden = false;
     $("draft-payload").textContent = JSON.stringify({ request: payload, response: res }, null, 2);
   });

@@ -29,6 +29,7 @@ from src.core.contracts import InstrumentType  # noqa: E402
 from src.core.engine import AGGREGATION_RULE  # noqa: E402
 from src.core.registry import StrategyRegistry, load_profiles, validate_config  # noqa: E402
 from src.core.scoring import RETAIN_THRESHOLD, SCORE_VERSION, WATCH_THRESHOLD, score_strategy  # noqa: E402
+from src.core.walkforward import walk_forward  # noqa: E402
 from src.data.adapters import CsvFileAdapter, DataUnavailable, SyntheticFixtureAdapter  # noqa: E402
 from src.data.ohlc import validate_series  # noqa: E402
 
@@ -81,8 +82,12 @@ def candidates_for(profile_name: str, profile: dict, registry: StrategyRegistry)
     return out
 
 
+WF_TRAIN_FRAC, WF_TEST_FRAC = 0.40, 0.15
+GRIDS_PATH = ROOT / "config" / "wf_grids.json"
+
+
 def run(mode: str, data_dir: Path, out: Path, baseline_path: Path | None,
-        history_path: Path | None = None) -> dict:
+        history_path: Path | None = None, use_grid: bool = False) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     registry, profiles = StrategyRegistry(), load_profiles()
     datasets, notes = load_datasets(mode, data_dir)
@@ -111,7 +116,21 @@ def run(mode: str, data_dir: Path, out: Path, baseline_path: Path | None,
                     trades = run_backtest(series, config, registry,
                                           allow_synthetic=(mode == "fixture"))
                     split = split_metrics(trades, series)
-                    sc = score_strategy(split, synthetic=(p.instrument_type is InstrumentType.SYNTHETIC))
+                    synthetic = p.instrument_type is InstrumentType.SYNTHETIC
+                    grids = json.loads(GRIDS_PATH.read_text()) if use_grid else {}
+                    wf = walk_forward(series, registry, profiles, pname, ids,
+                                      train_bars=max(50, int(len(series) * WF_TRAIN_FRAC)),
+                                      test_bars=max(10, int(len(series) * WF_TEST_FRAC)),
+                                      # grids only for single-strategy candidates: combining grids
+                                      # explodes the search space (and the multiple-testing risk)
+                                      grid=({k: v for k, v in grids.items() if k in ids} or None) if len(ids) == 1 else None,
+                                      allow_synthetic=(mode == "fixture"))
+                    wf_split = wf.split(len(series))
+                    sc = score_strategy(wf_split, synthetic=synthetic)
+                    sc["validation"] = "walk_forward"
+                    sc["walk_forward"] = {"folds": len(wf.folds), "oos": wf_split["out_of_sample"],
+                                          "params_by_fold": [f.params for f in wf.folds]}
+                    sc["simple_split"] = score_strategy(split, synthetic=synthetic)["score"]
                     scores.append({"dataset": name, "data_hash": series.data_hash(), "profile": pname,
                                    "candidate": cand, "strategies": ids,
                                    "strategy_versions": {i: meta["strategy_versions"][i] for i in ids},
@@ -133,12 +152,13 @@ def run(mode: str, data_dir: Path, out: Path, baseline_path: Path | None,
 
 def write_scores(out: Path, meta: dict, scores: list[dict]) -> None:
     """scores.csv + retained_strategies.json (score >= 6, eligible for PAPER trading only)."""
-    cols = ["dataset", "profile", "candidate", "score", "tier", "trades", "oos_trades", "gates", "score_version"]
+    cols = ["dataset", "profile", "candidate", "score", "tier", "validation", "simple_split", "trades", "oos_trades",
+            "gates", "score_version"]
     with (out / "scores.csv").open("w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(cols)
         for s in sorted(scores, key=lambda x: -x["score"]):
-            w.writerow([s[c] if c != "gates" else "|".join(s["gates"]) for c in cols])
+            w.writerow([s.get(c) if c != "gates" else "|".join(s["gates"]) for c in cols])
     retained = [s for s in scores if s["tier"] == "RETAINED"]
     (out / "retained_strategies.json").write_text(json.dumps({
         "generated_at": meta["generated_at"], "git_sha": meta["git_sha"], "mode": meta["mode"],
@@ -147,14 +167,18 @@ def write_scores(out: Path, meta: dict, scores: list[dict]) -> None:
         "retained": retained}, indent=2))
     lines = ["", "## Strategy scores (0-10, deterministic)", "",
              f"Rejected < {WATCH_THRESHOLD} · Watch (orange) {WATCH_THRESHOLD}-{RETAIN_THRESHOLD} · "
-             f"Retained (green) >= {RETAIN_THRESHOLD} → paper trading only.", ""]
+             f"Retained (green) >= {RETAIN_THRESHOLD} → paper trading only.",
+             "Scores use walk-forward out-of-sample trades (rolling train 40 % / test 15 %); the simple "
+             "70/30 split score is shown for comparison.", ""]
     if not scores:
         lines.append("- No score: no verified data.")
     else:
-        lines += ["| tier | score | profile | candidate | trades | OOS | gates |", "|---|---|---|---|---|---|---|"]
+        lines += ["| tier | score (WF) | split score | profile | candidate | WF folds | WF OOS trades | gates |",
+                  "|---|---|---|---|---|---|---|---|"]
         for s in sorted(scores, key=lambda x: -x["score"]):
-            lines.append(f"| {s['tier']} | {s['score']} | {s['profile']} | {s['candidate']} | "
-                         f"{s['trades']} | {s['oos_trades']} | {', '.join(s['gates'])} |")
+            wfd = s.get("walk_forward", {})
+            lines.append(f"| {s['tier']} | {s['score']} | {s.get('simple_split')} | {s['profile']} | {s['candidate']} | "
+                         f"{wfd.get('folds')} | {wfd.get('oos', {}).get('trades')} | {', '.join(s['gates'])} |")
     with (out / "report.md").open("a") as fh:
         fh.write("\n".join(lines) + "\n")
 
@@ -165,8 +189,8 @@ def append_history(path: Path, meta: dict, scores: list[dict]) -> None:
     entry = {"generated_at": meta["generated_at"], "git_sha": meta["git_sha"], "mode": meta["mode"],
              "status": meta["status"], "score_version": SCORE_VERSION,
              "datasets": [d["data_hash"] for d in meta.get("datasets", [])],
-             "scores": [{k: s[k] for k in ("dataset", "profile", "candidate", "score", "tier",
-                                           "trades", "oos_trades", "config_hash", "strategy_versions")}
+             "scores": [{k: s.get(k) for k in ("dataset", "profile", "candidate", "score", "tier", "validation",
+                                               "simple_split", "trades", "oos_trades", "config_hash", "strategy_versions")}
                         for s in scores]}
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, sort_keys=True) + "\n")
@@ -241,7 +265,7 @@ def write_outputs(out: Path, meta, rows, regressions, proposals) -> None:
               "", "## Limitations",
               "- Results are per unit in price points; position sizing needs broker contract metadata.",
               "- Costs are modelling assumptions from config/profiles.json, not broker-measured.",
-              "- No parameter optimisation was performed; the out-of-sample segment is a holdout.",
+              "- Walk-forward: parameters are chosen on train folds only (with --wf-grid); scores use stitched OOS trades.",
               "- Multiple candidates are compared: beware multiple-testing bias."]
     (out / "report.md").write_text("\n".join(lines) + "\n")
     (out / "proposals.md").write_text("# Research proposals (human review required)\n\n" +
@@ -256,9 +280,10 @@ def main() -> int:
     ap.add_argument("--baseline", default=None)
     ap.add_argument("--fail-on-regression", action="store_true")
     ap.add_argument("--history", default=None, help="append-only JSONL score history")
+    ap.add_argument("--wf-grid", action="store_true", help="select parameters on train folds from config/wf_grids.json")
     a = ap.parse_args()
     res = run(a.mode, Path(a.data_dir), Path(a.out), Path(a.baseline) if a.baseline else None,
-              Path(a.history) if a.history else None)
+              Path(a.history) if a.history else None, a.wf_grid)
     tiers = {}
     for s in res["scores"]:
         tiers[s["tier"]] = tiers.get(s["tier"], 0) + 1

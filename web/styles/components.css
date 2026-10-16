@@ -143,3 +143,11 @@ a.brand { color: inherit; text-decoration: none; }
 .key-row .code { flex: 1; max-height: none; word-break: break-all; }
 .steps { margin: 0; padding-left: 20px; display: grid; gap: var(--space-2); color: var(--text-2); }
 [hidden] { display: none !important; }
+
+.link { background: none; border: 0; padding: 0; color: var(--accent); font: 13px var(--font-ui); cursor: pointer; justify-self: start; }
+.link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ok-msg { margin: 0; color: var(--buy); font-size: 13px; }
+.verify-banner { border: 1px dashed var(--warn); display: grid; gap: var(--space-2); }
+.verify-banner p { margin: 0; }
+.captcha { min-height: 65px; }
+code { font-family: var(--font-mono); font-size: 12px; color: var(--text-1); }

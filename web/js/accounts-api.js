@@ -22,11 +22,18 @@ async function req(method, path, body) {
   return data;
 }
 
+const withCaptcha = (o, token) => (token ? { ...o, turnstile_token: token } : o);
+
 export const api = {
-  signup: (email, password) => req("POST", "/v1/auth/signup", { email, password }),
+  base: BASE,
+  signup: (email, password, captcha) => req("POST", "/v1/auth/signup", withCaptcha({ email, password }, captcha)),
   login: (email, password) => req("POST", "/v1/auth/login", { email, password }),
   logout: () => req("POST", "/v1/auth/logout"),
   me: () => req("GET", "/v1/me"),
+  verify: (token) => req("POST", "/v1/auth/verify", { token }),
+  resendVerification: () => req("POST", "/v1/auth/verify/resend"),
+  forgot: (email, captcha) => req("POST", "/v1/auth/password/forgot", withCaptcha({ email }, captcha)),
+  reset: (token, password) => req("POST", "/v1/auth/password/reset", { token, password }),
   terminals: () => req("GET", "/v1/terminals"),
   createTerminal: (label) => req("POST", "/v1/terminals", { label }),
   revokeTerminal: (id) => req("DELETE", `/v1/terminals/${encodeURIComponent(id)}`),

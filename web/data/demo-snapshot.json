@@ -439,6 +439,46 @@
     "D1"
    ],
    "params": []
+  },
+  {
+   "strategy_id": "sata_external",
+   "version": "0.1.0",
+   "name": "S.A.T.A. (externe, recherche)",
+   "description": "M\u00e9thodes S.A.T.A. appel\u00e9es depuis le paquet install\u00e9 s\u00e9par\u00e9ment. Recherche uniquement, licence en attente.",
+   "role": "signal",
+   "available": false,
+   "unavailable_reason": "LICENSE_PENDING_SATA_DISABLED",
+   "timeframes": [
+    "M1",
+    "M15",
+    "H1"
+   ],
+   "params": [
+    {
+     "name": "horizon",
+     "type": "int",
+     "default": 1,
+     "min": 0,
+     "max": 2,
+     "description": "0=scalping 1=normal 2=swing"
+    },
+    {
+     "name": "method",
+     "type": "int",
+     "default": 0,
+     "min": 0,
+     "max": 4,
+     "description": "0=tendance 1=smc 2=orderblock 3=combine 4=hybride"
+    },
+    {
+     "name": "min_score",
+     "type": "int",
+     "default": 80,
+     "min": 50,
+     "max": 100,
+     "description": "Minimum S.A.T.A. score"
+    }
+   ]
   }
  ],
  "profiles": {
@@ -503,7 +543,8 @@
     "sr_breakout",
     "atr_regime",
     "ema_slope_distance",
-    "sata_mql5_parity"
+    "sata_mql5_parity",
+    "sata_external"
    ],
    "risk": {
     "max_risk_per_trade_pct": 0.25,
@@ -575,7 +616,8 @@
     "sr_breakout",
     "atr_regime",
     "ema_slope_distance",
-    "sata_mql5_parity"
+    "sata_mql5_parity",
+    "sata_external"
    ],
    "risk": {
     "max_risk_per_trade_pct": 0.25,
@@ -595,7 +637,7 @@
    "sr_breakout",
    "atr_regime"
   ],
-  "config_hash": "c36a0cc50363a71125da1349"
+  "config_hash": "c811d4317589a859d914014a"
  },
  "candles": [
   {
@@ -2051,7 +2093,7 @@
    "SYNTHETIC_FIXTURE_NOT_MARKET_DATA",
    "NO_VALID_SIGNAL"
   ],
-  "config_hash": "c36a0cc50363a71125da1349",
+  "config_hash": "c811d4317589a859d914014a",
   "data_hash": "f11f8032061c3eb0f5d04aa8",
   "mode": "research",
   "agent_review": {

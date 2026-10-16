@@ -62,7 +62,8 @@
         "sr_breakout",
         "atr_regime",
         "ema_slope_distance",
-        "sata_mql5_parity"
+        "sata_mql5_parity",
+        "sata_external"
       ],
       "risk": {
         "max_risk_per_trade_pct": 0.25,
@@ -134,7 +135,8 @@
         "sr_breakout",
         "atr_regime",
         "ema_slope_distance",
-        "sata_mql5_parity"
+        "sata_mql5_parity",
+        "sata_external"
       ],
       "risk": {
         "max_risk_per_trade_pct": 0.25,

@@ -35,13 +35,46 @@
         <label class="field"><span>Mot de passe</span>
           <input type="password" name="password" autocomplete="current-password" minlength="12" required>
           <small class="hint" id="pw-hint" hidden>12 caractères minimum.</small></label>
+        <div id="captcha-signup" class="captcha" hidden></div>
         <p class="form-error" id="auth-error" role="alert"></p>
         <button class="btn" data-variant="primary" type="submit" id="auth-submit">Se connecter</button>
         <p class="muted small" id="trial-note" hidden>Essai gratuit de 7 jours, sans carte bancaire. Mode recherche et paper trading uniquement.</p>
+        <button class="link" type="button" id="forgot-open">Mot de passe oublié ?</button>
       </form>
     </section>
 
+    <section class="panel auth-card" id="forgot-view" hidden aria-labelledby="t-forgot">
+      <h1 class="panel-title auth-title" id="t-forgot">Mot de passe oublié</h1>
+      <form id="forgot-form" class="form" novalidate>
+        <label class="field"><span>E-mail du compte</span><input type="email" name="email" autocomplete="email" required></label>
+        <div id="captcha-forgot" class="captcha" hidden></div>
+        <p class="form-error" id="forgot-error" role="alert"></p>
+        <p class="ok-msg" id="forgot-ok" role="status" hidden>Si un compte existe pour cette adresse, un lien valable 30 minutes vient d'être envoyé.</p>
+        <button class="btn" data-variant="primary" type="submit">Envoyer le lien</button>
+        <button class="link" type="button" data-back>Retour à la connexion</button>
+      </form>
+    </section>
+
+    <section class="panel auth-card" id="reset-view" hidden aria-labelledby="t-reset">
+      <h1 class="panel-title auth-title" id="t-reset">Nouveau mot de passe</h1>
+      <form id="reset-form" class="form" novalidate>
+        <label class="field"><span>Nouveau mot de passe</span>
+          <input type="password" name="password" autocomplete="new-password" minlength="12" required>
+          <small class="hint">12 caractères minimum. Vos autres sessions seront déconnectées.</small></label>
+        <p class="form-error" id="reset-error" role="alert"></p>
+        <button class="btn" data-variant="primary" type="submit">Enregistrer</button>
+      </form>
+    </section>
+
+    <p class="panel ok-msg" id="flash" role="status" hidden></p>
+
     <div class="col-stack" id="account-view" hidden>
+      <section class="panel verify-banner" id="verify-banner" hidden>
+        <p>Confirmez votre adresse e-mail pour connecter un terminal MT5. Le lien est valable 24 h.</p>
+        <button class="btn btn-small" type="button" id="verify-resend">Renvoyer l'e-mail</button>
+        <p class="form-error" id="verify-error" role="alert"></p>
+      </section>
+
       <section class="panel" aria-labelledby="t-plan">
         <div class="panel-head"><h2 class="panel-title" id="t-plan">Abonnement</h2>
           <button class="btn btn-small" type="button" id="logout">Se déconnecter</button></div>
@@ -67,12 +100,12 @@
       <section class="panel" aria-labelledby="t-how">
         <div class="panel-head"><h2 class="panel-title" id="t-how">Installer l'EA dans MT5</h2></div>
         <ol class="steps">
-          <li>Dans MT5 : <b>Outils → Options → Expert Advisors</b>, cochez « Autoriser WebRequest » et ajoutez l'adresse de l'API Hinova.</li>
-          <li>Copiez l'EA Hinova dans le dossier <b>MQL5/Experts</b> puis glissez-le sur le graphique XAUUSD.</li>
-          <li>Dans les paramètres de l'EA, collez votre clé de terminal.</li>
+          <li>Dans MT5 : <b>Outils → Options → Expert Advisors</b>, cochez « Autoriser WebRequest » et ajoutez l'adresse <code id="api-origin">de l'API Hinova</code>.</li>
+          <li>Copiez <b>HinovaBridge.mq5</b> dans le dossier <b>MQL5/Experts</b>, compilez-le puis glissez-le sur un graphique XAUUSD.</li>
+          <li>Dans les paramètres de l'EA, collez votre clé de terminal et choisissez l'unité de temps de votre profil (M15 en intraday).</li>
         </ol>
         <p class="muted">Vous ne nous transmettez jamais votre mot de passe de trading : votre compte et vos fonds restent chez votre broker. L'exécution réelle d'ordres est désactivée.</p>
-        <p class="badge" data-tone="warn">EA en cours de développement</p>
+        <p class="badge" data-tone="warn">Version préliminaire · à tester sur compte démo</p>
       </section>
     </div>
   </main>

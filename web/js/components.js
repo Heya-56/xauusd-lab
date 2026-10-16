@@ -7,10 +7,18 @@ const PROFILE_ORDER = ["scalping", "intraday", "swing", "custom"];
 
 export function modeBadges(snap) {
   const s = snap.latest_signal;
+  const live = snap.snapshot_kind === "LIVE";
   return `<span class="badge" data-tone="accent">Mode ${esc(s.mode)}</span>
     <span class="badge" data-tone="warn">Live désactivé</span>
-    ${snap.snapshot_kind.includes("SYNTHETIC") ? '<span class="badge" data-tone="gold">Démo synthétique</span>' : ""}`;
+    ${live ? '<span class="badge" data-tone="buy">Connecté</span>' : '<span class="badge" data-tone="gold">Démo synthétique</span>'}`;
 }
+
+const DEMO_REASONS = {
+  NOT_SIGNED_IN: "Mode démo (données synthétiques). Connectez-vous dans « Mon compte » pour voir vos signaux.",
+  NETWORK_ERROR: "API injoignable : affichage de la démo synthétique. Aucun signal réel affiché.",
+  API_NOT_CONFIGURED: null,
+};
+export const demoMessage = (snap) => (snap.demo_reason && DEMO_REASONS[snap.demo_reason]) || snap.disclaimer || null;
 
 export function profileSwitch(snap, current) {
   return PROFILE_ORDER.filter((p) => snap.profiles[p]).map((p) =>
@@ -65,6 +73,11 @@ export function decision(sig) {
 }
 
 export function chart(candles, signals, el) {
+  if (!candles || !candles.length) {
+    el.setAttribute("viewBox", "0 0 640 260");
+    el.innerHTML = '<text class="axis" x="320" y="130" text-anchor="middle">Aucune bougie reçue</text>';
+    return;
+  }
   const W = el.clientWidth || 640, H = 260, pad = { l: 8, r: 52, t: 10, b: 20 };
   const hi = Math.max(...candles.map((c) => c.h)), lo = Math.min(...candles.map((c) => c.l));
   const x = (i) => pad.l + (i + 0.5) * ((W - pad.l - pad.r) / candles.length);
