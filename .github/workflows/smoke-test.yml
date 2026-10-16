@@ -9,6 +9,9 @@ on:
       - "tests/**"
       - "research/**"
       - "requirements.txt"
+      - "web/**"
+      - "migrations/**"
+      - "reports/baseline/**"
 
 jobs:
   test:

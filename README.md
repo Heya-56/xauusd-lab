@@ -10,6 +10,27 @@ A research and paper-validation laboratory for XAUUSD strategies. The determinis
 - [Portable lab implementation plan](docs/PORTABLE-LAB-PLAN.md).
 - [S.A.T.A. lab mapping](docs/SATA-LAB-MAP.md).
 
+## Hinova Trading Lab core — status 2026-10-15
+
+Deterministic core, data layer, risk gate, API services, optional agents and dashboard are in place
+and tested (no network, no API key). **Nothing is deployed; live execution is disabled; no XAUUSD
+spot/CFD performance is claimed** (no verified dataset yet).
+
+```bash
+pip install pyyaml pytest
+pytest -q                                                     # full deterministic suite
+python research/daily_research.py --mode real    --out reports/out/real      # DATA_MISSING until data/verified/ is filled
+python research/daily_research.py --mode fixture --out reports/out/fixture \
+       --baseline reports/baseline/fixture_baseline.json --fail-on-regression
+python research/build_dashboard_snapshot.py                   # regenerate web/data/demo-snapshot.json
+python -m http.server 8000 --directory web                    # dashboard (demo, synthetic)
+```
+
+- [Audit 2026-10-15](docs/AUDIT-2026-10-15.md) — baseline, risks found, new architecture
+- [MQL5 audit status](docs/MQL5-STRATEGY-AUDIT.md) — source missing, files requested
+- [EA ↔ API contract](docs/EA-BRIDGE-CONTRACT.md) · [Cloudflare deployment & rollback](docs/DEPLOYMENT-CLOUDFLARE.md)
+- [Verified data format](data/verified/README.md)
+
 ## Data-source status — read before interpreting results
 
 Yahoo Finance returned HTTP 404 for `XAUUSD=X`. The older `GC=F` ticker represents COMEX gold futures, not XAUUSD spot, and must not be reported as spot performance. The IBKR runner currently requires a local authenticated IB Gateway/TWS session, so it is not the no-install GitHub Actions route. Until a valid and verified spot/CFD feed is configured, **no XAUUSD spot backtest result is claimed**.

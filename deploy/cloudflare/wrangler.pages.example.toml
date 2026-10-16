@@ -1,0 +1,11 @@
+# Example only — copy to wrangler.toml per environment/customer. Never commit real IDs or tokens.
+# Static dashboard on Cloudflare Pages (no server logic in this bundle).
+name = "hinova-trading-lab-dashboard"        # white-label: <client>-trading-lab
+pages_build_output_dir = "web"
+compatibility_date = "2026-10-01"
+
+# Future API Worker bindings (NOT implemented yet) would look like:
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "hinova-trading-lab-<env>"
+# database_id = "<set per environment, outside git>"
