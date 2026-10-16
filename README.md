@@ -1,48 +1,64 @@
-# XAUUSD Lab
+# XAUUSD Lab — Hinova Trading Lab foundation
 
-Research and Paper-validation laboratory for gold strategies. No AI/ML. No live orders.
+A research and paper-validation laboratory for XAUUSD strategies. The deterministic research core remains authoritative; optional AI agents may explain and review evidence, but must never invent market data, bypass risk controls or automatically promote strategies. **No live orders are enabled.**
 
-## Start here — no local installation required for research
+## Start here
 
-1. Open the [Actions tab](https://github.com/Heya-56/xauusd-lab/actions).
-2. Select **Lab smoke test** and choose **Run workflow** to validate the code and safety checks.
-3. The research workflow is separate from the broker adapter. When a validated historical XAUUSD spot data source is configured, its run will publish CSV/JSON reports as downloadable artifacts.
+- **[Claude Code: full Hinova Trading Lab architecture and implementation brief](docs/CLAUDE-HINOVA-TRADING-LAB-SPEC.md)** — system layers, strategy toggles, scalping/intraday/swing profiles, anti-hallucination controls, daily research loop, multi-tenancy, Cloudflare white-label deployment and acceptance criteria.
+- [Claude Code: MQL5-first gold engine brief](docs/CLAUDE-GOLD-ENGINE-BRIEF.md) — locate and audit the actual EA source before claiming strategy parity.
+- [GitHub Actions](https://github.com/Heya-56/xauusd-lab/actions) — select **Lab smoke test** and choose **Run workflow** to validate the current code and safety checks.
+- [Portable lab implementation plan](docs/PORTABLE-LAB-PLAN.md).
+- [S.A.T.A. lab mapping](docs/SATA-LAB-MAP.md).
 
-> **Data-source status:** Yahoo Finance returned HTTP 404 for XAUUSD=X. The older GC=F ticker is COMEX gold futures, not XAUUSD spot, and must not be reported as spot performance. The IBKR runner currently requires a local authenticated IB Gateway/TWS session, so it is not the no-install GitHub Actions route. Until a valid spot feed is connected, no XAUUSD spot backtest result is claimed.
+## Data-source status — read before interpreting results
+
+Yahoo Finance returned HTTP 404 for `XAUUSD=X`. The older `GC=F` ticker represents COMEX gold futures, not XAUUSD spot, and must not be reported as spot performance. The IBKR runner currently requires a local authenticated IB Gateway/TWS session, so it is not the no-install GitHub Actions route. Until a valid and verified spot/CFD feed is configured, **no XAUUSD spot backtest result is claimed**.
 
 ## Research protocol
 
-All candidates must use the same verified data, explicit cost/slippage assumptions, and comparable periods. Require out-of-sample validation and at least 30 trades before considering a candidate for Paper. Do not select a winner from README claims or in-sample returns alone.
+- Candidates use the same verified data, timestamps, cost/slippage assumptions and execution model.
+- Require chronological out-of-sample or walk-forward validation; do not select a winner on in-sample returns alone.
+- Require at least 30 trades for preliminary consideration and document sample-size limitations.
+- Report trade count, expectancy, profit factor, maximum drawdown, costs, exposure and out-of-sample performance.
+- Failed, stale or mismatched data must result in an explicit failure/NO_TRADE state, never fabricated results.
 
-The existing competition runner evaluates five candidate families across five Paris-time entry hours and two holding horizons (50 configurations), but its current Yahoo XAUUSD data fetch is blocked. See [portable lab implementation plan](docs/PORTABLE-LAB-PLAN.md).
+The existing competition runner evaluates five candidate families across five Paris-time entry hours and two holding horizons (50 configurations), but its current Yahoo XAUUSD data fetch is blocked.
 
-## Architecture
+## Architecture principles
 
-- **Research core:** portable deterministic backtests and metrics.
-- **Market-data adapters:** normalized OHLC data, with source/instrument metadata.
-- **Broker adapters (later):** IBKR Paper, MT5 demo/Paper, or another compatible broker, without coupling the research core to any one provider.
-- **Reports:** CSV/JSON downloadable from GitHub Actions.
-- **Payments (separate layer):** PayPal/OSB may be evaluated for commercial receipts. They are not broker connectors; trading-profit withdrawals depend on the broker's supported withdrawal methods.
+- **Presentation:** CSS, dashboard components and responsive layout only; never authoritative signal logic.
+- **API/application:** authentication, tenant isolation, licenses, entitlements, audit events and validated contracts.
+- **Deterministic core:** indicator calculations, independent strategy modules, signal schemas, risk gates and backtesting; runs without an LLM.
+- **Data layer:** source adapters, normalized OHLC, instrument identity, provenance, quality checks, parameterized/allow-listed queries and migrations.
+- **Optional agents:** structured analysis, bull/bear review and research proposals with evidence references; no arbitrary SQL, direct production edits or self-authorized deployment.
+- **Daily research:** repeatable reports and proposed experiments; no automatic strategy promotion or deployment.
+- **Adapters:** isolated MT5/IBKR data or paper-execution integrations; no broker credentials in browser code, logs or GitHub.
+- **White-label:** reproducible versioned deployment into a customer's own Cloudflare account, with narrowly scoped customer-authorized access and separate secrets/configuration.
 
-## S.A.T.A. integration
+## Current strategy research
 
-S.A.T.A. is treated as a strategy and execution subsystem, not copied blindly into the Lab. The Lab maps its 3 horizons and 4 analysis methods into 12 reproducible candidates:
+The S.A.T.A. mapping describes 12 candidates from three horizons and four methods:
 
-- Scalping: M15 bias, M5 setup, M1 trigger
-- Normal: H4 bias, H1 setup, M15 trigger
-- Swing: D1 bias, H4 setup, M15 trigger
-- Methods: tendance, smc, orderblock, combine
+- Scalping: M15 bias, M5 setup, M1 trigger.
+- Normal: H4 bias, H1 setup, M15 trigger.
+- Swing: D1 bias, H4 setup, M15 trigger.
+- Methods: tendance, SMC, order block and combined.
 
-See [docs/SATA-LAB-MAP.md](docs/SATA-LAB-MAP.md).
+These are research mappings, not proof of profitability. MACD, RSI, Fibonacci, MA20/MA50, ATR, DeMarker and price-structure candidates must each be independently versioned, testable and switchable. Fibonacci pivots and all pattern detectors must avoid look-ahead/repainting.
 
-## Safety
+## Safety baseline
 
-- The research runner never submits orders.
+- Research runner does not submit orders.
 - Paper validation is a separate stage.
-- Live orders remain disabled by default.
-- Broker credentials must never be exposed to the browser or committed to GitHub.
-- No broker-specific dependency belongs in the research core.
+- Live execution remains disabled by default and is out of scope for the current brief.
+- An independent deterministic risk gate can veto every proposed setup.
+- Invalid/stale data, malformed agent output, API failure or missing evidence must fail closed.
+- No grid, martingale, averaging down or unlimited position stacking.
+- Never expose broker credentials to the website, an LLM provider or the repository.
+- Never claim tests passed unless they actually ran and passed.
 
-## Current branch
+## Current working branch
 
-integration/sata-lab-v2
+`feature/gold-engine-mql5-tradingagents` (based on `integration/sata-lab-v2`).
+
+Before strategy-specific implementation, inspect the repository and locate the actual `.mq5`, `.mqh`, `.set` and Strategy Tester files. If the source is missing, do not invent the original strategy's rules or claim parity. Continue only with scaffolding and explicitly specified, independently testable components.
