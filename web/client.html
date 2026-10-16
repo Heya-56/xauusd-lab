@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hinova Trading Lab — Mon tableau de bord</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/client.css">
+  <script src="config.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div>
+        <div class="brand-title">Hinova Trading Lab</div>
+        <div class="brand-sub">Or (XAUUSD) · signaux d'aide à la décision</div>
+      </div>
+    </div>
+    <nav class="badge-row">
+      <a class="btn btn-small" href="index.html">Vue détaillée</a>
+      <a class="btn btn-small" href="account.html">Mon compte</a>
+    </nav>
+  </header>
+
+  <div class="banner" id="c-banner" role="status" hidden></div>
+
+  <main class="c-main">
+    <!-- 1. La réponse principale -->
+    <section class="c-hero" id="c-hero" aria-live="polite">
+      <p class="c-eyebrow">En ce moment</p>
+      <h1 class="c-hero-title" id="c-hero-title">Chargement…</h1>
+      <p class="c-hero-text" id="c-hero-text"></p>
+      <ul class="c-why" id="c-why"></ul>
+      <p class="c-hero-foot" id="c-hero-foot"></p>
+    </section>
+
+    <!-- 2. Trois voyants -->
+    <section class="c-lights" aria-label="État du service">
+      <div class="c-light" id="c-l-mt5"></div>
+      <div class="c-light" id="c-l-data"></div>
+      <div class="c-light" id="c-l-safety"></div>
+    </section>
+
+    <!-- 3. Graphique -->
+    <section class="panel">
+      <div class="panel-head"><h2 class="panel-title">Le prix de l'or</h2><span class="panel-meta" id="c-chart-meta"></span></div>
+      <svg class="chart" id="c-chart" role="img" aria-label="Graphique du prix et des signaux"></svg>
+      <p class="c-legend"><span class="c-dot buy"></span> signal d'achat · <span class="c-dot sell"></span> signal de vente · chaque bougie = une période</p>
+    </section>
+
+    <!-- 4. Jauges -->
+    <section class="panel">
+      <div class="panel-head"><h2 class="panel-title">Note de chaque méthode</h2><span class="panel-meta">sur 10</span></div>
+      <p class="c-help">Chaque méthode est testée sur des périodes qu'elle n'a jamais vues. <b>Moins de 5</b> : écartée. <b>5 à 6</b> : à surveiller. <b>6 et plus</b> : retenue pour l'entraînement (sans argent réel).</p>
+      <div class="c-gauges" id="c-gauges"></div>
+    </section>
+
+    <!-- 5. Historique -->
+    <section class="panel">
+      <div class="panel-head"><h2 class="panel-title">Derniers signaux</h2></div>
+      <ul class="c-history" id="c-history"></ul>
+    </section>
+
+    <!-- 6. Mes réglages -->
+    <section class="panel">
+      <div class="panel-head"><h2 class="panel-title">Mon style</h2></div>
+      <div class="c-styles" id="c-styles" role="group" aria-label="Style de trading"></div>
+      <p class="c-help" id="c-style-text"></p>
+      <p class="c-help">Pour changer de style ou de méthodes, utilisez la <a href="index.html">vue détaillée</a> : chaque changement est vérifié par le serveur.</p>
+    </section>
+
+    <!-- 7. Mise en route -->
+    <section class="panel">
+      <div class="panel-head"><h2 class="panel-title">Bien démarrer</h2></div>
+      <ol class="c-steps">
+        <li><b>Créez votre compte</b> et confirmez votre e-mail.</li>
+        <li><b>Créez une clé MT5</b> dans « Mon compte ».</li>
+        <li><b>Installez l'EA HinovaBridge</b> sur un graphique XAUUSD (compte démo), collez la clé.</li>
+        <li><b>Revenez ici</b> : vos signaux s'affichent à chaque bougie clôturée.</li>
+      </ol>
+    </section>
+
+    <!-- 8. Lexique -->
+    <section class="panel">
+      <div class="panel-head"><h2 class="panel-title">Lexique</h2></div>
+      <dl class="c-glossary">
+        <dt>Signal</dt><dd>Une proposition (acheter, vendre ou attendre). Ce n'est jamais un ordre : vous restez seul décideur.</dd>
+        <dt>Bougie</dt><dd>Le résumé du prix sur une période (ex. 15 minutes) : ouverture, plus haut, plus bas, clôture.</dd>
+        <dt>Stop / objectif</dt><dd>Le niveau où l'on accepterait de perdre, et celui où l'on prendrait le gain.</dd>
+        <dt>Spread</dt><dd>L'écart entre prix d'achat et de vente chez votre broker. Trop large, on attend.</dd>
+        <dt>EA</dt><dd>Un petit programme dans MetaTrader 5. Le nôtre envoie les prix et affiche le signal ; il ne passe aucun ordre.</dd>
+      </dl>
+    </section>
+  </main>
+
+  <footer class="c-footer">
+    Outil d'aide à la décision et de recherche. Aucun ordre n'est passé, aucun accès à vos fonds. Les résultats passés ne préjugent pas des résultats futurs.
+  </footer>
+
+  <script type="module" src="js/client-app.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+/* Client (plain-language) view. Uses tokens.css only, so white-label re-branding still works. */
+.c-main { max-width: 760px; margin: 0 auto; padding: var(--space-4); display: grid; gap: var(--space-4); }
+.c-main a { color: var(--accent); }
+
+.c-hero {
+  border-radius: var(--radius-l); padding: var(--space-5);
+  background: var(--bg-1); box-shadow: var(--shadow-panel);
+  border-left: 6px solid var(--neutral);
+}
+.c-hero[data-tone="buy"]  { border-left-color: var(--buy);  background: linear-gradient(90deg, var(--buy-soft), var(--bg-1) 60%); }
+.c-hero[data-tone="sell"] { border-left-color: var(--sell); background: linear-gradient(90deg, var(--sell-soft), var(--bg-1) 60%); }
+.c-hero[data-tone="wait"] { border-left-color: var(--gold); background: linear-gradient(90deg, var(--gold-soft), var(--bg-1) 60%); }
+.c-eyebrow { margin: 0; color: var(--text-3); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.c-hero-title { margin: var(--space-1) 0 var(--space-2); font-size: clamp(26px, 6vw, 36px); font-weight: 700; line-height: 1.1; }
+.c-hero-text { margin: 0; font-size: 16px; color: var(--text-1); }
+.c-why { margin: var(--space-3) 0 0; padding-left: 20px; color: var(--text-2); font-size: 15px; }
+.c-why li { margin: 2px 0; }
+.c-hero-foot { margin: var(--space-3) 0 0; color: var(--text-3); font-size: 13px; }
+
+.c-lights { display: grid; gap: var(--space-3); grid-template-columns: 1fr; }
+@media (min-width: 640px) { .c-lights { grid-template-columns: repeat(3, 1fr); } }
+.c-light { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m); background: var(--bg-1); box-shadow: var(--shadow-panel); }
+.c-light-dot { flex: none; width: 12px; height: 12px; margin-top: 4px; border-radius: 50%; background: var(--neutral); }
+.c-light[data-state="ok"] .c-light-dot { background: var(--buy); box-shadow: 0 0 10px var(--buy); }
+.c-light[data-state="ko"] .c-light-dot { background: var(--sell); box-shadow: 0 0 10px var(--sell); }
+.c-light-title { font-weight: 600; }
+.c-light-text { color: var(--text-2); font-size: 13px; }
+
+.c-legend, .c-help { color: var(--text-2); font-size: 13px; margin: var(--space-2) 0 0; }
+.c-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; }
+.c-dot.buy { background: var(--buy); } .c-dot.sell { background: var(--sell); }
+
+.c-gauges { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+.c-gauge { padding: var(--space-3); border-radius: var(--radius-m); background: var(--bg-2); }
+.c-gauge-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+.c-gauge-name { font-weight: 600; }
+.c-gauge-score { font-family: var(--font-mono); font-size: 20px; font-weight: 600; }
+.c-gauge-score small { font-size: 12px; color: var(--text-3); }
+.c-bar { position: relative; height: 10px; margin: var(--space-2) 0; border-radius: 99px; background: var(--bg-3); overflow: hidden; }
+.c-bar span { display: block; height: 100%; border-radius: 99px; background: var(--sell); transition: width var(--dur) var(--ease); }
+.c-bar i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--bg-0); }
+.c-gauge[data-tier="WATCH"] .c-bar span { background: var(--warn); }
+.c-gauge[data-tier="RETAINED"] .c-bar span { background: var(--buy); }
+.c-gauge-foot { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); color: var(--text-2); font-size: 13px; }
+.c-tag { font-weight: 600; color: var(--sell); }
+.c-gauge[data-tier="WATCH"] .c-tag { color: var(--warn); }
+.c-gauge[data-tier="RETAINED"] .c-tag { color: var(--buy); }
+.c-note { color: var(--text-3); }
+
+.c-history { list-style: none; margin: 0; padding: 0; }
+.c-history li { display: grid; grid-template-columns: 90px 1fr auto; gap: var(--space-3); align-items: center;
+  padding: var(--space-2) 0; border-bottom: 1px solid var(--line); }
+.c-history li:last-child { border-bottom: 0; }
+.c-h-word { font-weight: 600; }
+.c-history li[data-tone="buy"] .c-h-word { color: var(--buy); }
+.c-history li[data-tone="sell"] .c-h-word { color: var(--sell); }
+.c-h-price { font-family: var(--font-mono); }
+.c-h-time { color: var(--text-3); font-size: 13px; }
+
+.c-styles { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.c-style { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--text-2); }
+.c-style[aria-current="true"] { border-color: var(--accent); color: var(--text-1); box-shadow: var(--glow-accent); }
+
+.c-steps { margin: 0; padding-left: 22px; display: grid; gap: var(--space-2); color: var(--text-2); }
+.c-steps b { color: var(--text-1); }
+.c-glossary { margin: 0; display: grid; gap: var(--space-2); }
+.c-glossary dt { font-weight: 600; }
+.c-glossary dd { margin: 0 0 var(--space-2); color: var(--text-2); }
+
+.c-footer { max-width: 760px; margin: 0 auto; padding: var(--space-4) var(--space-4) var(--space-6);
+  color: var(--text-3); font-size: 12px; text-align: center; }
