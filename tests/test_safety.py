@@ -44,3 +44,14 @@ def test_no_obvious_secrets_committed():
     for f in files:
         if f.is_file() and f.suffix in {".py", ".json", ".yml", ".toml", ".js", ".md", ".sql", ".html"}:
             assert not pat.search(f.read_text(errors="ignore")), f
+
+
+def test_mql5_scanner_cannot_trade():
+    """The MT5 scanner is decision-support only: no trading API may appear in its sources."""
+    forbidden = re.compile(r"\b(OrderSend|OrderSendAsync|CTrade|PositionOpen|PositionClose)\b|Trade\.mqh")
+    folder = ROOT / "mql5" / "HinovaGoldScanner"
+    files = list(folder.glob("*.mq5")) + list(folder.glob("*.mqh"))
+    assert files, "scanner sources missing"
+    for f in files:
+        code = "\n".join(l for l in f.read_text(encoding="utf-8").splitlines() if not l.strip().startswith("//"))
+        assert not forbidden.search(code), f
