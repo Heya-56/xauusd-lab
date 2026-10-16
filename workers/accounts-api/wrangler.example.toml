@@ -1,0 +1,14 @@
+# Example only. Copy to wrangler.toml (gitignored) and fill IDs per environment / client.
+name = "hinova-accounts-api"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://<your-dashboard>.pages.dev"
+PBKDF2_ITERATIONS = "100000"   # check CPU limits of your Workers plan before changing
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hinova-trading-lab"
+database_id = "<set-outside-git>"
+migrations_dir = "../../migrations"

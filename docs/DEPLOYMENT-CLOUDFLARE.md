@@ -9,7 +9,8 @@ Nothing has been deployed. This document is the procedure to follow once reviewe
 | `web/` dashboard (static) | Cloudflare Pages | Ready as static files; runs in demo mode on the synthetic snapshot |
 | Deterministic core + research | GitHub Actions | Ready (`daily-research.yml`, `smoke-test.yml`) |
 | API (`src/api/service.py`) | — | Service layer + tests only. **No HTTP runtime yet** |
-| D1 schema | Cloudflare D1 | `migrations/0001_init.sql` ready, not applied |
+| D1 schema | Cloudflare D1 | `migrations/0001_init.sql` + `0002_accounts.sql` ready, not applied remotely |
+| Accounts API (`workers/accounts-api`) | Cloudflare Worker + D1 | Sign-up/login/sessions/trial/MT5 terminal keys. Tested locally in `wrangler dev`; **not deployed** |
 
 ### Gap: API runtime
 
@@ -54,3 +55,16 @@ Never commit any of these. `.gitignore` excludes `.env*`, `.dev.vars`, `.wrangle
 3. Deploy with the steps above into the client account. Record the release tag.
 4. Commercial terms (e.g. the proposed white-label licence fee) live in the signed contract,
    not in code or config. Licence expiry may disable new signals; it must never touch positions.
+
+## Accounts Worker — first deployment (to run once reviewed)
+
+```bash
+cd workers/accounts-api && npm ci
+npx wrangler d1 create hinova-trading-lab           # note the database_id
+cp wrangler.example.toml wrangler.toml               # set database_id + ALLOWED_ORIGINS (dashboard URL)
+npx wrangler d1 migrations apply hinova-trading-lab --remote
+npx wrangler deploy
+```
+Then set `window.HINOVA_ACCOUNTS_API` in `web/config.js` to the Worker URL and deploy `web/` to Pages.
+Missing before public launch: e-mail verification, password reset, Turnstile on sign-up, legal pages
+(CGU, privacy/RGPD), and the signal endpoint linking terminal keys to the Python engine.

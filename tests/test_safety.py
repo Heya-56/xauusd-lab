@@ -35,6 +35,12 @@ def test_no_price_hardcoded_in_engine():
 
 def test_no_obvious_secrets_committed():
     pat = re.compile(r"(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN (RSA )?PRIVATE KEY)")
-    for f in ROOT.rglob("*"):
-        if f.is_file() and ".git" not in f.parts and f.suffix in {".py", ".json", ".yml", ".toml", ".js", ".md", ".sql"}:
+    import subprocess
+    try:
+        tracked = subprocess.check_output(["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, text=True).split()
+        files = [ROOT / f for f in tracked]
+    except Exception:
+        files = [f for f in ROOT.rglob("*") if ".git" not in f.parts and "node_modules" not in f.parts]
+    for f in files:
+        if f.is_file() and f.suffix in {".py", ".json", ".yml", ".toml", ".js", ".md", ".sql", ".html"}:
             assert not pat.search(f.read_text(errors="ignore")), f

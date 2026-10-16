@@ -12,3 +12,5 @@ data/private/
 data/verified/*.csv
 data/verified/*.meta.json
 raw/
+workers/*/wrangler.toml
+node_modules/

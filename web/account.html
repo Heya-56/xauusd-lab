@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mon compte · Hinova Trading Lab</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <script src="config.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="index.html">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div><div class="brand-title">Hinova Trading Lab</div><div class="brand-sub">Mon compte</div></div>
+    </a>
+    <div class="badge-row" id="account-badges"></div>
+  </header>
+
+  <main class="auth-main">
+    <section class="panel auth-card" id="auth-view" hidden aria-labelledby="t-auth">
+      <div class="segmented" role="tablist" aria-label="Accès">
+        <button type="button" role="tab" aria-pressed="true" data-mode="login">Connexion</button>
+        <button type="button" role="tab" aria-pressed="false" data-mode="signup">Créer un compte</button>
+      </div>
+      <h1 class="panel-title auth-title" id="t-auth">Connexion</h1>
+      <form id="auth-form" class="form" novalidate>
+        <label class="field"><span>E-mail</span>
+          <input type="email" name="email" autocomplete="email" required></label>
+        <label class="field"><span>Mot de passe</span>
+          <input type="password" name="password" autocomplete="current-password" minlength="12" required>
+          <small class="hint" id="pw-hint" hidden>12 caractères minimum.</small></label>
+        <p class="form-error" id="auth-error" role="alert"></p>
+        <button class="btn" data-variant="primary" type="submit" id="auth-submit">Se connecter</button>
+        <p class="muted small" id="trial-note" hidden>Essai gratuit de 7 jours, sans carte bancaire. Mode recherche et paper trading uniquement.</p>
+      </form>
+    </section>
+
+    <div class="col-stack" id="account-view" hidden>
+      <section class="panel" aria-labelledby="t-plan">
+        <div class="panel-head"><h2 class="panel-title" id="t-plan">Abonnement</h2>
+          <button class="btn btn-small" type="button" id="logout">Se déconnecter</button></div>
+        <dl class="kv" id="plan"></dl>
+      </section>
+
+      <section class="panel" aria-labelledby="t-mt5">
+        <div class="panel-head"><h2 class="panel-title" id="t-mt5">Mes terminaux MT5</h2><span class="panel-meta" id="term-count"></span></div>
+        <ul class="strategy-list" id="terminals"></ul>
+        <form id="term-form" class="form form-inline" novalidate>
+          <label class="field"><span>Nom du terminal</span>
+            <input name="label" maxlength="40" placeholder="ex. MT5 VPS Londres" required></label>
+          <button class="btn" data-variant="primary" type="submit">Connecter un MT5</button>
+        </form>
+        <p class="form-error" id="term-error" role="alert"></p>
+        <div class="key-reveal" id="key-reveal" hidden>
+          <p class="draft-text">Copiez cette clé maintenant : elle ne sera plus jamais affichée.</p>
+          <div class="key-row"><code class="code" id="key-value"></code>
+            <button class="btn btn-small" type="button" id="key-copy">Copier</button></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="t-how">
+        <div class="panel-head"><h2 class="panel-title" id="t-how">Installer l'EA dans MT5</h2></div>
+        <ol class="steps">
+          <li>Dans MT5 : <b>Outils → Options → Expert Advisors</b>, cochez « Autoriser WebRequest » et ajoutez l'adresse de l'API Hinova.</li>
+          <li>Copiez l'EA Hinova dans le dossier <b>MQL5/Experts</b> puis glissez-le sur le graphique XAUUSD.</li>
+          <li>Dans les paramètres de l'EA, collez votre clé de terminal.</li>
+        </ol>
+        <p class="muted">Vous ne nous transmettez jamais votre mot de passe de trading : votre compte et vos fonds restent chez votre broker. L'exécution réelle d'ordres est désactivée.</p>
+        <p class="badge" data-tone="warn">EA en cours de développement</p>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="js/account-app.js"></script>
+</body>
+</html>
