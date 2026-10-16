@@ -33,6 +33,9 @@ input double        InpZExit          = 0.5;             // Z-score de retour au
 input double        InpPtsEntry       = 150.0;           // Déviation d'entrée (points, mode fixe)
 input double        InpPtsExit        = 50.0;            // Déviation de sortie (points, mode fixe)
 input int           InpMaxQuoteAgeMs  = 5000;            // Décalage max entre les deux cotations (ms)
+input double        InpMinDevPts      = 50.0;            // Déviation minimale absolue (points)
+input double        InpCostMult       = 3.0;             // Déviation >= N x spread broker
+input int           InpConfirmSamples = 3;               // Échantillons consécutifs pour confirmer
 input group "Interface et journal"
 input int           InpUiRefreshMs    = 500;             // Rafraîchissement du panneau (ms)
 input int           InpPanelX         = 20;
@@ -85,7 +88,8 @@ int OnInit(void)
       return(INIT_PARAMETERS_INCORRECT);
 
    if(!g_engine.Init(_Symbol, InpRefSymbol, InpMode, InpWindow, InpSampleMs, InpMaxQuoteAgeMs,
-                     InpZEntry, InpZExit, InpPtsEntry, InpPtsExit))
+                     InpZEntry, InpZExit, InpPtsEntry, InpPtsExit,
+                     InpMinDevPts, InpCostMult, InpConfirmSamples))
      {
       Print("[HGS] Paramètres du moteur invalides (fenêtre >= 30, sortie < entrée, ages >= 500 ms).");
       return(INIT_PARAMETERS_INCORRECT);
