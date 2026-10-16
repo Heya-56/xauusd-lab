@@ -33,3 +33,18 @@ ts,open,high,low,close,volume,spread
 `instrument_type` must be `spot` or `cfd`. A `futures` dataset (e.g. COMEX `GC=F`)
 is excluded from XAUUSD reports. Do not commit licensed data you are not allowed to
 redistribute: keep it in a private store and fetch it in a separate, clearly marked job.
+
+## Getting data — current status (2026-10-16)
+
+- **Dukascopy via GitHub Actions: blocked.** Their data server answers GitHub-hosted runners with
+  HTTP 202 and empty payloads. The fetch step is disabled by default; we do not bypass it.
+- **Recommended route — your broker's MT5 export** (the same feed the EA will trade):
+  MT5 → *View → Symbols* → XAUUSD → *Bars* → M15 → choose dates → *Request* → *Export Bars*,
+  then convert columns to the schema above with `instrument_type: "cfd"` and
+  `source: "mt5:<broker>:<server>"`.
+- **Dukascopy from your own computer** (residential IP), research use only:
+  `npx dukascopy-node@1.50.0 -i xauusd -from 2025-10-01 -to 2026-10-15 -t m15 -p bid -v -f csv -bs 3 -bp 1500 -r 3 -re`
+  (same with `-p ask`), then `python research/import_dukascopy.py ... --ask ...`.
+
+Keep licensed data out of git (see `.gitignore`); store it privately and inject it into CI only
+through a separate, explicitly approved job.

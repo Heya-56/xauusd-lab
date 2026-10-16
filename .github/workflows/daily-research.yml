@@ -41,10 +41,14 @@ jobs:
           --fail-on-regression
 
       - name: 3a. Fetch XAUUSD M15 from Dukascopy (network job, may fail -> DATA_MISSING)
+        # Disabled by default: on 2026-10-16 Dukascopy answered GitHub-hosted runners with
+        # HTTP 202 / empty payloads (anti-bot). We do not bypass it. Enable with repo
+        # variable ENABLE_DUKASCOPY_FETCH=true only from an allowed runner (e.g. self-hosted).
+        if: vars.ENABLE_DUKASCOPY_FETCH == 'true'
         continue-on-error: true
         timeout-minutes: 20
         env:
-          FETCH_DAYS: "30"   # diagnostic window; raise to 365 once the fetch is confirmed
+          FETCH_DAYS: "365"
         run: |
           set -uo pipefail
           FROM=$(date -u -d "${FETCH_DAYS:-365} days ago" +%F)
