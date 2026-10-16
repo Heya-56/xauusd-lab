@@ -10,11 +10,13 @@ A research and paper-validation laboratory for XAUUSD strategies. The determinis
 - [Portable lab implementation plan](docs/PORTABLE-LAB-PLAN.md).
 - [S.A.T.A. lab mapping](docs/SATA-LAB-MAP.md).
 
-## Hinova Trading Lab core — status 2026-10-15
+## Hinova Trading Lab — status 2026-10-16
 
-Deterministic core, data layer, risk gate, API services, optional agents and dashboard are in place
-and tested (no network, no API key). **Nothing is deployed; live execution is disabled; no XAUUSD
-spot/CFD performance is claimed** (no verified dataset yet).
+End-to-end chain built and tested: MT5 bridge EA → Cloudflare Worker (accounts, trial, e-mail
+verification, terminal keys, configs) → HMAC-signed Python engine → live dashboard. Walk-forward
+validation and a 0–10 score rank strategies. **Nothing is deployed; live execution is disabled; no
+XAUUSD spot/CFD performance is claimed** (no verified dataset yet). S.A.T.A. is evaluated only as an
+external package, pending a written licence from its author.
 
 ```bash
 pip install pyyaml pytest
@@ -28,7 +30,8 @@ python -m http.server 8000 --directory web                    # dashboard (demo,
 
 - [Audit 2026-10-15](docs/AUDIT-2026-10-15.md) — baseline, risks found, new architecture
 - [MQL5 audit status](docs/MQL5-STRATEGY-AUDIT.md) — source missing, files requested
-- [EA ↔ API contract](docs/EA-BRIDGE-CONTRACT.md) · [Cloudflare deployment & rollback](docs/DEPLOYMENT-CLOUDFLARE.md)
+- [EA ↔ API contract](docs/EA-BRIDGE-CONTRACT.md) · [Architecture, deployment & rollback](docs/DEPLOYMENT-CLOUDFLARE.md)
+- MT5: [Hinova Bridge](mql5/HinovaBridge/README.md) (signals) · [Hinova Gold Scanner](mql5/HinovaGoldScanner/README.md) (spot vs futures)
 - [Verified data format](data/verified/README.md) · [Score 0-10 and AI policy](docs/SCORING-AND-AI-POLICY.md)
 
 ## Data-source status — read before interpreting results

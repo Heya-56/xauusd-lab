@@ -1,70 +1,88 @@
 # Deployment — GitHub + Cloudflare (status: NOT DEPLOYED)
 
-Nothing has been deployed. This document is the procedure to follow once reviewed.
+Nothing has been deployed. Everything below is prepared and tested locally; a deployment needs
+your explicit go and the secrets listed here.
 
-## What is deployable today
+## Architecture
 
-| Component | Target | State |
+```
+MT5 terminal ── HinovaBridge.mq5 ──HTTPS (terminal key)──┐
+                                                           ▼
+Browser ── Cloudflare Pages (web/) ──HTTPS (session)──▶ Cloudflare Worker (workers/accounts-api) ── D1
+                                                           │  accounts, trial, terminal keys, configs, signals
+                                                           │  HMAC-signed request (ENGINE_SECRET)
+                                                           ▼
+                                      Python engine container (Dockerfile.engine, src/api/engine_http.py)
+                                      stateless: validates configs, computes signals, never stores, never trades
+```
+
+- The Worker never computes a signal; the engine never sees credentials or sessions and accepts only
+  requests signed by the Worker (60 s window).
+- The engine is a standard container: run it on any host you control (Cloudflare Containers, Fly.io,
+  Railway, a small VPS). It needs no database and no outbound network.
+
+## What is ready / verified
+
+| Component | Verified how | Deployed |
 |---|---|---|
-| `web/` dashboard (static) | Cloudflare Pages | Ready as static files; runs in demo mode on the synthetic snapshot |
-| Deterministic core + research | GitHub Actions | Ready (`daily-research.yml`, `smoke-test.yml`) |
-| API (`src/api/service.py`) | — | Service layer + tests only. **No HTTP runtime yet** |
-| D1 schema | Cloudflare D1 | `migrations/0001_init.sql` + `0002_accounts.sql` ready, not applied remotely |
-| Accounts API (`workers/accounts-api`) | Cloudflare Worker + D1 | Sign-up/login/sessions/trial/MT5 terminal keys. Tested locally in `wrangler dev`; **not deployed** |
+| Engine service | 6 unit tests + real socket test; started with the container's exact command | no |
+| Accounts / gateway Worker | 14 unit tests + 2 integration tests against the real engine; full browser run in `wrangler dev` | no |
+| D1 schema | migrations 0001–0003 applied to a local D1 by wrangler | no |
+| Dashboard + account pages | Chromium run: sign-up → verify link → terminal key → config → EA signal → live dashboard | no |
+| Engine image | Dockerfile written; **not built here** (no Docker daemon in this sandbox) | no |
+| MT5 EAs | not compiled here (MetaEditor is Windows-only) | — |
 
-### Gap: API runtime
-
-The core is Python (stdlib only). Options to evaluate before building the API:
-1. Cloudflare Python Workers (verify current GA status, limits and stdlib support first);
-2. a small container/VM API (FastAPI) behind Cloudflare, with D1 or SQLite/Postgres;
-3. port `src/core` to TypeScript — rejected for now: two implementations would break parity.
-Recommendation: option 1 if verified suitable, else option 2. Decision pending.
-
-## Environments & secrets
+## Secrets and variables
 
 | Name | Where | Purpose |
 |---|---|---|
-| `CLOUDFLARE_API_TOKEN` | GitHub Actions secret (per environment) | Pages/D1 deploy — scope: *Pages Edit*, *D1 Edit* on one account only |
-| `CLOUDFLARE_ACCOUNT_ID` | GitHub Actions variable | Target account |
-| `HINOVA_API_KEY_HASHES` | Worker/API secret | JSON map `sha256(key) → tenant_id`; raw keys never stored |
-| `D1 database_id` | wrangler config outside git / CI variable | Per environment and per client |
-| `LLM_PROVIDER_API_KEY` | API secret, optional | Only if an LLM adapter is enabled; core works without it |
-| Payment webhook secret | API secret, future | Provider **not selected**; no integration exists |
+| `CLOUDFLARE_API_TOKEN` | GitHub secret (environment `preview`) | Workers Scripts Edit, D1 Edit, Pages Edit — one account only |
+| `ENGINE_SECRET` | GitHub secret → Worker secret; same value as `HINOVA_ENGINE_SECRET` on the engine host | HMAC between Worker and engine (≥ 32 random chars) |
+| `TURNSTILE_SECRET` | GitHub secret → Worker secret | Anti-bot on sign-up and password reset (Cloudflare Turnstile, free) |
+| `RESEND_API_KEY` | GitHub secret → Worker secret | Verification and reset e-mails (provider: Resend; replaceable in `email.js`) |
+| `CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID`, `PAGES_PROJECT` | GitHub variables | Targets |
+| `DASHBOARD_ORIGIN`, `ACCOUNTS_API_URL`, `ENGINE_URL`, `EMAIL_FROM`, `TURNSTILE_SITEKEY` | GitHub variables | Public configuration |
 
-Never commit any of these. `.gitignore` excludes `.env*`, `.dev.vars`, `.wrangler/`.
+Never commit any of these. `.gitignore` excludes `.env*`, `.dev.vars`, `.wrangler/`, `workers/*/wrangler.toml`.
+Without `TURNSTILE_SECRET` or the e-mail key, sign-up refuses (fails closed) unless `DEV_MODE=true`,
+which must only be used locally.
 
-## Procedure (Hinova account)
+## First preview deployment (once you approve)
 
-1. Merge request reviewed and CI green (`smoke-test`, `daily-research` fixture step).
-2. `npx wrangler pages deploy web --project-name <project> --branch <env>` (preview first).
-3. Check the preview URL: banner, NO_TRADE default, toggles, no console errors.
-4. Promote preview → production in the Pages dashboard.
+1. Create the D1 database: `npx wrangler d1 create hinova-trading-lab` → note the id.
+2. Create a Turnstile widget (Cloudflare dashboard → Turnstile) for the dashboard domain → site key + secret.
+3. Create a Resend account, verify the sending domain → API key.
+4. Run the engine container: `docker build -f Dockerfile.engine -t hinova-engine .` and
+   `docker run -e HINOVA_ENGINE_SECRET=… -p 8090:8090 hinova-engine` on your host, behind HTTPS.
+5. Fill the GitHub secrets/variables above (environment `preview`).
+6. GitHub → Actions → **Deploy preview (manual)** → type `deploy-preview`. The job re-runs all tests,
+   applies migrations, deploys the Worker and its secrets, then the dashboard to the Pages `preview` branch.
+7. Check: sign-up e-mail arrives, verification link works, terminal key, then the EA on a **demo** MT5 account.
+
+## Local development
+
+```bash
+python -m src.api.engine_http                     # with HINOVA_ENGINE_SECRET set
+cd workers/accounts-api && cp wrangler.example.toml wrangler.toml   # set DEV_MODE="true", ENGINE_URL=http://127.0.0.1:8090
+printf 'ENGINE_SECRET=<same secret>\n' > .dev.vars
+npx wrangler d1 migrations apply hinova-trading-lab --local && npx wrangler dev --local
+python -m http.server 8765 --directory web       # web/config.js: HINOVA_ACCOUNTS_API = "http://localhost:8787"
+```
 
 ## Rollback
 
-- Pages: *Deployments → previous deployment → Rollback* (instant, no rebuild).
-- D1: migrations are additive; keep a `wrangler d1 export` before each migration.
+- Worker: Cloudflare dashboard → Workers → *Deployments* → roll back to the previous version.
+- Pages: *Deployments* → previous deployment → *Rollback* (instant).
+- D1: migrations are additive; export first: `npx wrangler d1 export hinova-trading-lab --remote --output backup.sql`.
+- Engine: redeploy the previous image tag.
 - Git: revert the merge commit; never force-push shared branches.
 
 ## White-label (client-owned Cloudflare account)
 
-1. Client creates their own Cloudflare account and grants a **scoped, time-limited** token
-   (or runs the deploy themselves). Never reuse Hinova secrets.
-2. Fork/release tag → client config: branding = replace `web/styles/tokens.css` + name/logo;
-   separate D1 database; separate API key hashes.
-3. Deploy with the steps above into the client account. Record the release tag.
-4. Commercial terms (e.g. the proposed white-label licence fee) live in the signed contract,
-   not in code or config. Licence expiry may disable new signals; it must never touch positions.
-
-## Accounts Worker — first deployment (to run once reviewed)
-
-```bash
-cd workers/accounts-api && npm ci
-npx wrangler d1 create hinova-trading-lab           # note the database_id
-cp wrangler.example.toml wrangler.toml               # set database_id + ALLOWED_ORIGINS (dashboard URL)
-npx wrangler d1 migrations apply hinova-trading-lab --remote
-npx wrangler deploy
-```
-Then set `window.HINOVA_ACCOUNTS_API` in `web/config.js` to the Worker URL and deploy `web/` to Pages.
-Missing before public launch: e-mail verification, password reset, Turnstile on sign-up, legal pages
-(CGU, privacy/RGPD), and the signal endpoint linking terminal keys to the Python engine.
+1. The client creates their Cloudflare account and grants a **scoped, time-limited** token (or runs the
+   workflow themselves). Never reuse Hinova secrets: new `ENGINE_SECRET`, Turnstile keys, e-mail key, D1.
+2. Branding: replace `web/styles/tokens.css`, name and logo; configuration in `web/config.js` and the
+   Worker variables — never in core code.
+3. Deploy with the same workflow in the client's GitHub environment. Record the release tag.
+4. Commercial terms (e.g. the proposed licence fee) live in the signed contract, not in code. Licence
+   expiry may disable new signals; it must never touch positions.

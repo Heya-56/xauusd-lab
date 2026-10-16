@@ -28,5 +28,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Accounts Worker tests (node:sqlite D1 shim, no network)
+      - name: Worker tests + integration with the real Python engine (no network)
         run: node --no-warnings --test workers/accounts-api/test/*.test.js

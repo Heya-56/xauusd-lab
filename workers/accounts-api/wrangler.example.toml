@@ -1,11 +1,20 @@
-# Example only. Copy to wrangler.toml (gitignored) and fill IDs per environment / client.
+# Example only. Copy to wrangler.toml (gitignored) per environment / white-label client.
 name = "hinova-accounts-api"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 
 [vars]
-ALLOWED_ORIGINS = "https://<your-dashboard>.pages.dev"
+ALLOWED_ORIGINS = "https://<your-dashboard>.pages.dev"   # comma-separated, exact origins
+APP_URL = "https://<your-dashboard>.pages.dev"            # used in e-mailed links
+ENGINE_URL = "https://<engine-host>"                     # Python engine (Dockerfile.engine)
+EMAIL_FROM = "Hinova Trading Lab <no-reply@<your-domain>>"
 PBKDF2_ITERATIONS = "100000"   # check CPU limits of your Workers plan before changing
+# DEV_MODE = "true"            # local only: skips Turnstile/e-mail when not configured. NEVER in production.
+
+# Secrets (wrangler secret put NAME) — never in this file:
+#   ENGINE_SECRET     >= 32 random chars, identical to HINOVA_ENGINE_SECRET on the engine
+#   TURNSTILE_SECRET  Cloudflare Turnstile secret key
+#   RESEND_API_KEY    transactional e-mail provider key
 
 [[d1_databases]]
 binding = "DB"

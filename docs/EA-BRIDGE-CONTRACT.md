@@ -1,4 +1,4 @@
-# Client EA ↔ Hinova API contract (v1.0) — design, not yet implemented
+# Client EA ↔ Hinova API contract (v1.0) — implemented
 
 The client runs a **light MQL5 EA in their own MetaTrader 5 terminal**. Hinova never
 receives broker passwords, never holds funds, and never sends orders. The EA:
@@ -7,9 +7,12 @@ receives broker passwords, never holds funds, and never sends orders. The EA:
 2. receives a **proposal** (`BUY` / `SELL` / `NO_TRADE`);
 3. re-checks everything locally before any (future, separately authorised) action.
 
-## Request — `POST /v1/signals/evaluate`
+Implementation: `mql5/HinovaBridge/HinovaBridge.mq5` (EA), `workers/accounts-api/src/signals.js` (gateway),
+`src/api/engine_http.py` (engine). The exact payload is `mql5/HinovaBridge/payload.example.json`.
 
-Header `Authorization: Bearer <tenant API key>` (stored in the EA inputs, never in code).
+## Request — `POST /v1/ea/signal`
+
+Header `Authorization: Bearer htl_…` (terminal key from « Mon compte », stored in the EA inputs, never in code).
 
 ```json
 {
@@ -24,19 +27,21 @@ Header `Authorization: Bearer <tenant API key>` (stored in the EA inputs, never 
 }
 ```
 
-Rules enforced server-side (`src/api/service.py`): unknown fields rejected; `tenant_id`
-in the body rejected; `request_ts` within ±300 s; idempotency key replays the stored
-answer; ≤ 2000 candles; data quality, freshness and instrument identity validated.
+Rules enforced server-side (Worker + engine): terminal key valid and not revoked; e-mail verified;
+`signals.read` entitlement active; unknown fields and `tenant_id` in the body rejected; `request_ts`
+within ±300 s; idempotency key replays the stored answer; ≤ 2000 candles; 30 requests/min per tenant;
+the engine re-validates the stored configuration and checks data quality, freshness, timeframe and
+instrument identity (futures refused).
 
 ## Response
 
 `signal` = full `SignalRecord` (`src/core/contracts.py`) plus `signal_id`, `tenant_id`,
 `expires_at` (60 s). `execution_allowed` is always `false` in this milestone.
 
-## Mandatory EA-side behaviour (when written)
+## EA-side behaviour (implemented)
 
 - Add the API URL to *Tools → Options → Expert Advisors → Allow WebRequest*.
-- `WebRequest` is synchronous: call it from `OnTimer`, short timeout (≤ 3 s), never block `OnTick`.
+- `WebRequest` is synchronous: called from `OnTimer`, timeout ≤ 10 s, `OnTick` is never blocked.
 - On timeout, HTTP error, invalid JSON, `expires_at` passed, symbol mismatch or
   `execution_allowed=false` → **do nothing** (fail closed).
 - Recompute lot size locally from `SYMBOL_TRADE_TICK_VALUE`, `SYMBOL_TRADE_TICK_SIZE`,
