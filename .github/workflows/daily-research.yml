@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "17 16 * * 1-5"   # 16:17 UTC (06:17 Tahiti), weekdays
   workflow_dispatch:
+  push:   # until merged to main, workflow_dispatch is unavailable for this file
+    branches: [feature/gold-engine-mql5-tradingagents]
+    paths: ["src/**", "research/**", "config/**", ".github/workflows/daily-research.yml"]
 
 permissions:
   contents: read
