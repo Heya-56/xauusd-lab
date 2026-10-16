@@ -68,6 +68,9 @@ Suivre `docs/DEPLOYMENT-CLOUDFLARE.md` → section « Local development ». Rés
 6. Attendu : un panneau BUY / SELL / NO_TRADE à chaque bougie clôturée, et le signal visible sur le dashboard.
    Le bouton « Trading algorithmique » peut rester désactivé : l'EA n'en a pas besoin, il ne trade pas.
 
+`HinovaScalpIndicator` (indicateur, pas EA) : copier `mql5/HinovaScalpIndicator/` dans `MQL5/Indicators/`, F7,
+puis glisser sur XAUUSD M1–M15. Flèches sur bougies clôturées + SL/TP indicatifs ; aucun ordre.
+
 `HinovaGoldScanner` : glisser sur XAUUSD ; renseigner le nom du symbole GC de ton broker (il varie : `GC`, `GOLD.f`, `XAUUSD.fut`…). Il compare et journalise, il ne trade pas.
 
 ## 6. Prompts prêts à copier
