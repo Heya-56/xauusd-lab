@@ -34,7 +34,7 @@ Browser ── Cloudflare Pages (web/) ──HTTPS (session)──▶ Cloudflare
 
 ## Preview deployment safety gate
 
-The manual workflow requires `D1_PREVIEW_DATABASE_ID` and targets the dedicated database name `hinova-trading-lab-preview`. Create a separate preview D1 database and set that variable to its ID only; never reuse a production database ID. The workflow validates required secrets/variables and tests before it applies remote migrations. It deploys the Worker and the Pages `preview` branch only. It does **not** build or host the Python engine container, which must already be reachable over HTTPS at `ENGINE_URL`.
+The manual workflow requires `D1_PREVIEW_DATABASE_ID` and targets the dedicated database name `hinova-trading-lab-preview` and Worker name `hinova-accounts-api-preview`. Create a separate preview D1 database and set that variable to its ID only; never reuse a production database ID. The workflow validates required secrets/variables and tests before it applies remote migrations. It deploys the Worker and the Pages `preview` branch only. It does **not** build or host the Python engine container, which must already be reachable over HTTPS at `ENGINE_URL`.
 
 ## Secrets and variables
 
@@ -53,7 +53,7 @@ which must only be used locally.
 
 ## First preview deployment (once you approve)
 
-1. Create the D1 database: `npx wrangler d1 create hinova-trading-lab` → note the id.
+1. Create a dedicated preview D1 database: `npx wrangler d1 create hinova-trading-lab-preview` → set its ID as `D1_PREVIEW_DATABASE_ID`. Do not use the production database ID.
 2. Create a Turnstile widget (Cloudflare dashboard → Turnstile) for the dashboard domain → site key + secret.
 3. Create a Resend account, verify the sending domain → API key.
 4. Run the engine container: `docker build -f Dockerfile.engine -t hinova-engine .` and
