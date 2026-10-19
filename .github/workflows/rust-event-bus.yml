@@ -24,8 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: services/rust-event-bus
-      - run: cargo fmt --all -- --check
-      - run: cargo test --locked
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+      - name: Generate dependency lockfile
+        run: cargo generate-lockfile
+      - name: Test Rust event bus
+        run: cargo test --locked
+      - name: Test MT5 quote normalization (no terminal required)
+        run: python -m unittest test_mt5_bridge.py
