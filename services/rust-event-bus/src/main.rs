@@ -93,17 +93,11 @@ async fn health() -> Json<Health> {
     })
 }
 
-async fn ingest_ws(
-    ws: WebSocketUpgrade,
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+async fn ingest_ws(ws: WebSocketUpgrade, State(state): State<Arc<AppState>>) -> impl IntoResponse {
     ws.on_upgrade(move |socket| ingest(socket, state))
 }
 
-async fn ticks_ws(
-    ws: WebSocketUpgrade,
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+async fn ticks_ws(ws: WebSocketUpgrade, State(state): State<Arc<AppState>>) -> impl IntoResponse {
     ws.on_upgrade(move |socket| subscribe(socket, state))
 }
 
@@ -195,7 +189,9 @@ async fn main() {
 
     // Local-only by default. Bind externally only after adding transport authentication.
     let bind = env::var("EVENT_BUS_BIND").unwrap_or_else(|_| "127.0.0.1:8787".into());
-    let addr: SocketAddr = bind.parse().expect("EVENT_BUS_BIND must be a socket address");
+    let addr: SocketAddr = bind
+        .parse()
+        .expect("EVENT_BUS_BIND must be a socket address");
     let (ticks, _) = broadcast::channel(CHANNEL_CAPACITY);
     let state = Arc::new(AppState { ticks });
     let app = Router::new()
