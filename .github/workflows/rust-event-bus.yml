@@ -1,0 +1,40 @@
+name: Rust event bus
+
+on:
+  pull_request:
+    paths:
+      - "services/rust-event-bus/**"
+      - ".github/workflows/rust-event-bus.yml"
+  push:
+    branches:
+      - "feature/rust-tick-event-bus"
+    paths:
+      - "services/rust-event-bus/**"
+      - ".github/workflows/rust-event-bus.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/rust-event-bus
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/rust-event-bus
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+      - name: Generate dependency lockfile
+        run: cargo generate-lockfile
+      - name: Test Rust event bus
+        run: cargo test --locked
+      - name: Test MT5 quote normalization (no terminal required)
+        run: python -m unittest test_mt5_bridge.py
