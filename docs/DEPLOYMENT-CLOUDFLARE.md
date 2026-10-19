@@ -32,6 +32,10 @@ Browser ── Cloudflare Pages (web/) ──HTTPS (session)──▶ Cloudflare
 | Engine image | Dockerfile written; **not built here** (no Docker daemon in this sandbox) | no |
 | MT5 EAs | not compiled here (MetaEditor is Windows-only) | — |
 
+## Preview deployment safety gate
+
+The manual workflow requires `D1_PREVIEW_DATABASE_ID` and targets the dedicated database name `hinova-trading-lab-preview`. Create a separate preview D1 database and set that variable to its ID only; never reuse a production database ID. The workflow validates required secrets/variables and tests before it applies remote migrations. It deploys the Worker and the Pages `preview` branch only. It does **not** build or host the Python engine container, which must already be reachable over HTTPS at `ENGINE_URL`.
+
 ## Secrets and variables
 
 | Name | Where | Purpose |
