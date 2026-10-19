@@ -1,19 +1,22 @@
 name: Deploy preview (manual)
 
-# Manual only. Nothing deploys on push. Requires repository secrets/variables:
-#   secrets: CLOUDFLARE_API_TOKEN (scope: Workers Scripts Edit, D1 Edit, Pages Edit — one account),
-#            ENGINE_SECRET, TURNSTILE_SECRET, RESEND_API_KEY
-#   vars:    CLOUDFLARE_ACCOUNT_ID, D1_DATABASE_ID, PAGES_PROJECT, DASHBOARD_ORIGIN, ENGINE_URL,
-#            EMAIL_FROM, TURNSTILE_SITEKEY, ACCOUNTS_API_URL
+# Deploys ONLY the preview Worker/D1/Pages configuration. The Python engine is a
+# separate container and must already exist at ENGINE_URL. Never point the preview
+# D1 ID at a production database.
 on:
   workflow_dispatch:
     inputs:
       confirm:
         description: 'Type "deploy-preview" to confirm'
         required: true
+        type: string
 
 permissions:
   contents: read
+
+concurrency:
+  group: xauusd-lab-preview-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -23,24 +26,109 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+        with:
+          python-version: "3.12"
       - uses: actions/setup-node@v4
-        with: { node-version: "22" }
-      - run: python -m pip install -r requirements.txt
+        with:
+          node-version: "22"
+
+      - name: Validate preview configuration (no deployment)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          D1_PREVIEW_DATABASE_ID: ${{ vars.D1_PREVIEW_DATABASE_ID }}
+          PAGES_PROJECT: ${{ vars.PAGES_PROJECT }}
+          DASHBOARD_ORIGIN: ${{ vars.DASHBOARD_ORIGIN }}
+          ENGINE_URL: ${{ vars.ENGINE_URL }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          TURNSTILE_SITEKEY: ${{ vars.TURNSTILE_SITEKEY }}
+          ACCOUNTS_API_URL: ${{ vars.ACCOUNTS_API_URL }}
+          ENGINE_SECRET: ${{ secrets.ENGINE_SECRET }}
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          from urllib.parse import urlparse
+
+          required = [
+              "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID",
+              "D1_PREVIEW_DATABASE_ID", "PAGES_PROJECT", "DASHBOARD_ORIGIN",
+              "ENGINE_URL", "EMAIL_FROM", "TURNSTILE_SITEKEY", "ACCOUNTS_API_URL",
+              "ENGINE_SECRET", "TURNSTILE_SECRET", "RESEND_API_KEY",
+          ]
+          missing = [key for key in required if not os.environ.get(key, "").strip()]
+          if missing:
+              print("Missing required GitHub environment secrets/variables: " + ", ".join(missing))
+              sys.exit(1)
+
+          for key in ("DASHBOARD_ORIGIN", "ENGINE_URL", "ACCOUNTS_API_URL"):
+              parsed = urlparse(os.environ[key])
+              if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:
+                  print(f"{key} must be an HTTPS URL without embedded credentials.")
+                  sys.exit(1)
+
+          if len(os.environ["ENGINE_SECRET"]) < 32:
+              print("ENGINE_SECRET must contain at least 32 characters.")
+              sys.exit(1)
+          if os.environ["PAGES_PROJECT"].strip() in {"", "your-pages-project"}:
+              print("PAGES_PROJECT must name the intended Pages project.")
+              sys.exit(1)
+          print("Preview configuration is present and syntactically valid; no deploy has occurred.")
+          PY
+
+      - name: Install Python and Worker dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          npm ci
+        working-directory: workers/accounts-api
+
       - name: Tests must pass before any deploy
         run: |
+          python -m pip install -r requirements.txt
           pytest -q
           node --no-warnings --test workers/accounts-api/test/*.test.js
-      - name: Render wrangler.toml for preview
+          node --no-warnings --test tests/kernel-console.test.js
+
+      - name: Render and validate preview Wrangler config
         working-directory: workers/accounts-api
+        env:
+          D1_PREVIEW_DATABASE_ID: ${{ vars.D1_PREVIEW_DATABASE_ID }}
+          DASHBOARD_ORIGIN: ${{ vars.DASHBOARD_ORIGIN }}
+          ENGINE_URL: ${{ vars.ENGINE_URL }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
         run: |
-          sed -e "s#<set-outside-git>#${{ vars.D1_DATABASE_ID }}#" \
-              -e "s#https://<your-dashboard>.pages.dev#${{ vars.DASHBOARD_ORIGIN }}#g" \
-              -e "s#https://<engine-host>#${{ vars.ENGINE_URL }}#" \
-              -e "s#Hinova Trading Lab <no-reply@<your-domain>>#${{ vars.EMAIL_FROM }}#" \
-              wrangler.example.toml > wrangler.toml
-          grep -q "<" wrangler.toml && { echo "unrendered placeholder"; exit 1; } || true
-      - name: D1 migrations, Worker and secrets
+          python - <<'PY'
+          import os
+          import pathlib
+          import sys
+
+          template = pathlib.Path("wrangler.example.toml").read_text()
+          replacements = {
+              "<set-outside-git>": os.environ["D1_PREVIEW_DATABASE_ID"],
+              "https://<your-dashboard>.pages.dev": os.environ["DASHBOARD_ORIGIN"],
+              "https://<engine-host>": os.environ["ENGINE_URL"],
+              "Hinova Trading Lab <no-reply@<your-domain>>": os.environ["EMAIL_FROM"],
+          }
+          rendered = template
+          for old, new in replacements.items():
+              rendered = rendered.replace(old, new)
+          rendered = rendered.replace(
+              'database_name = "hinova-trading-lab"',
+              'database_name = "hinova-trading-lab-preview"',
+          )
+          if "<" in rendered or ">" in rendered:
+              print("Unresolved template placeholder remains; refusing to deploy.")
+              sys.exit(1)
+          if 'database_name = "hinova-trading-lab-preview"' not in rendered:
+              print("Preview D1 database name guard failed.")
+              sys.exit(1)
+          pathlib.Path("wrangler.toml").write_text(rendered)
+          print("Rendered Wrangler config for the dedicated hinova-trading-lab-preview database.")
+          PY
+
+      - name: Apply preview D1 migrations and deploy Worker
         working-directory: workers/accounts-api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -49,19 +137,27 @@ jobs:
           TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
-          npm ci
-          npx wrangler d1 migrations apply hinova-trading-lab --remote
+          npx wrangler d1 migrations apply hinova-trading-lab-preview --remote
           npx wrangler deploy
           printf '%s' "$ENGINE_SECRET"    | npx wrangler secret put ENGINE_SECRET
           printf '%s' "$TURNSTILE_SECRET" | npx wrangler secret put TURNSTILE_SECRET
           printf '%s' "$RESEND_API_KEY"   | npx wrangler secret put RESEND_API_KEY
-      - name: Dashboard on Pages (preview branch)
+
+      - name: Publish dashboard to Pages preview branch
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: ${{ vars.PAGES_PROJECT }}
+          ACCOUNTS_API_URL: ${{ vars.ACCOUNTS_API_URL }}
+          TURNSTILE_SITEKEY: ${{ vars.TURNSTILE_SITEKEY }}
         run: |
-          cat > web/config.js <<JS
-          window.HINOVA_ACCOUNTS_API = "${{ vars.ACCOUNTS_API_URL }}";
-          window.HINOVA_TURNSTILE_SITEKEY = "${{ vars.TURNSTILE_SITEKEY }}";
-          JS
-          npx --yes wrangler@4.151.0 pages deploy web --project-name "${{ vars.PAGES_PROJECT }}" --branch preview
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          Path("web/config.js").write_text(
+              "window.HINOVA_ACCOUNTS_API = " + json.dumps(os.environ["ACCOUNTS_API_URL"]) + ";\n"
+              "window.HINOVA_TURNSTILE_SITEKEY = " + json.dumps(os.environ["TURNSTILE_SITEKEY"]) + ";\n"
+          )
+          PY
+          npx --yes wrangler@4.151.0 pages deploy web --project-name "$PAGES_PROJECT" --branch preview
