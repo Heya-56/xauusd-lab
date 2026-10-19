@@ -1,52 +1,38 @@
 # Hinova Rust Tick Event Bus — first vertical slice
 
-This service is an isolated, transport-level prototype. It does not place orders and is
-not yet wired into the Python strategy engine, SQL agents, or QuestDB.
+This isolated transport prototype does not place orders and is not yet wired into Python strategy agents, SQL agents, or QuestDB.
 
-## Run locally
-
-```bash
+## Start the Rust bus
+```powershell
 cd services/rust-event-bus
 cargo test
 cargo run
 ```
+Default bind: `127.0.0.1:8787`. Do not bind publicly; authentication and TLS are not implemented.
 
-Default bind is `127.0.0.1:8787`. Do not bind to a public interface: the current prototype
-does not authenticate WebSocket clients. Set `EVENT_BUS_BIND` only on a trusted local network
-until authentication and TLS termination are implemented.
+- Health: `http://127.0.0.1:8787/health`
+- Ingest: `ws://127.0.0.1:8787/ws/ingest`
+- Consumers: `ws://127.0.0.1:8787/ws/ticks`
 
-- Health: `GET http://127.0.0.1:8787/health`
-- Source adapters publish: `ws://127.0.0.1:8787/ws/ingest`
-- Strategy/data consumers subscribe: `ws://127.0.0.1:8787/ws/ticks`
+## Connect MT5 in read-only mode
+Run this bridge on the Windows computer with the MT5 desktop terminal installed and logged in. It only reads quotes; it contains no order-placement calls.
 
-## Tick schema v1
-
-```json
-{
-  "schema_version": 1,
-  "event_id": "source-unique-id",
-  "source": "mt5|tradingview|ibkr|csv",
-  "symbol": "XAUUSD",
-  "instrument_type": "spot|cfd|future|unknown",
-  "timestamp_ms": 1790000000000,
-  "received_at_ms": 0,
-  "sequence": 1,
-  "bid": 2300.0,
-  "ask": 2300.2,
-  "venue": null
-}
+1. Start the Rust bus on that same computer.
+2. Open MT5 and log into the intended demo account. Confirm the broker's gold symbol in Market Watch (it may be `XAUUSD`, `XAUUSD.a`, `GOLD`, etc.).
+3. In PowerShell, from this directory:
+```powershell
+py -m pip install -r requirements-mt5.txt
+$env:MT5_SYMBOL = "XAUUSD"
+$env:EVENT_BUS_WS_URL = "ws://127.0.0.1:8787/ws/ingest"
+py mt5_bridge.py
 ```
+Set `MT5_SYMBOL` to the exact broker symbol. The bridge rejects non-loopback WebSocket URLs. Press Ctrl+C to stop it.
 
-The server overwrites `received_at_ms`, validates schema, timestamp, prices and spread
-ordering, then broadcasts accepted ticks. Instrument type and source are mandatory to
-prevent silently conflating COMEX futures with spot/CFD quotes. Adapters must use the
-actual source/instrument labels, not the example labels blindly.
+A successful connection prints bid/ask updates and acknowledgements from the Rust bus. If no quotes appear, check MT5 login, Market Watch symbol, market hours, and the bus health endpoint.
 
-## Known limitations — intentionally explicit
-
-- In-memory broadcast only: no durable replay, delivery guarantee, or cross-process recovery.
-- Slow consumers receive a lag warning; they must reconnect/recover from a durable log when added.
-- No authentication, authorization, TLS, persistence, deduplication, or rate limiting yet.
-- The WebSocket endpoint accepts already-normalized ticks; vendor-specific adapters are separate.
-- This is a new crate and is not wired into the existing Python `src/core/event_bus.py`.
-- No production deployment or live execution is part of this change.
+### Limits and safety
+- A bus acknowledgement proves that the local MT5 API supplied a quote and the bus accepted it; it does not prove production readiness.
+- The symbol is deliberately labeled `broker_instrument_unverified`; symbol name alone does not establish spot/CFD/futures classification.
+- This polling bridge forwards the latest observed quote; it is not a lossless tick recorder.
+- No live orders, authentication, TLS, persistence, deduplication, or rate limiting.
+- Python strategy agents, SQL agents, PostgreSQL, and QuestDB remain unconnected.
