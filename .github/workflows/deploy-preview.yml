@@ -118,6 +118,10 @@ jobs:
               'database_name = "hinova-trading-lab"',
               'database_name = "hinova-trading-lab-preview"',
           )
+          rendered = rendered.replace(
+              'name = "hinova-accounts-api"',
+              'name = "hinova-accounts-api-preview"',
+          )
           unresolved = (
               "<set-outside-git>",
               "https://<your-dashboard>.pages.dev",
@@ -129,6 +133,9 @@ jobs:
               sys.exit(1)
           if 'database_name = "hinova-trading-lab-preview"' not in rendered:
               print("Preview D1 database name guard failed.")
+              sys.exit(1)
+          if 'name = "hinova-accounts-api-preview"' not in rendered:
+              print("Preview Worker name guard failed.")
               sys.exit(1)
           pathlib.Path("wrangler.toml").write_text(rendered)
           print("Rendered Wrangler config for the dedicated hinova-trading-lab-preview database.")
