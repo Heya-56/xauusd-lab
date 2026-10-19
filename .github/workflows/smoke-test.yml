@@ -38,6 +38,10 @@ jobs:
           node-version: "22"
       - name: Worker tests + integration with the real Python engine (no network)
         run: node --no-warnings --test workers/accounts-api/test/*.test.js
+      - name: Kernel console safety tests
+        run: node --no-warnings --test tests/kernel-console.test.js
+      - name: Kernel console syntax check
+        run: node --check web/js/kernel-console.js
 
       - name: Create diagnostic report
         if: always()
