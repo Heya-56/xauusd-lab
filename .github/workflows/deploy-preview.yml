@@ -78,11 +78,12 @@ jobs:
           print("Preview configuration is present and syntactically valid; no deploy has occurred.")
           PY
 
-      - name: Install Python and Worker dependencies
-        run: |
-          python -m pip install -r requirements.txt
-          npm ci
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Install Worker dependencies
         working-directory: workers/accounts-api
+        run: npm ci
 
       - name: Tests must pass before any deploy
         run: |
@@ -118,7 +119,13 @@ jobs:
               'database_name = "hinova-trading-lab"',
               'database_name = "hinova-trading-lab-preview"',
           )
-          if "<" in rendered or ">" in rendered:
+          unresolved = (
+              "<set-outside-git>",
+              "https://<your-dashboard>.pages.dev",
+              "https://<engine-host>",
+              "<your-domain>",
+          )
+          if any(marker in rendered for marker in unresolved):
               print("Unresolved template placeholder remains; refusing to deploy.")
               sys.exit(1)
           if 'database_name = "hinova-trading-lab-preview"' not in rendered:
