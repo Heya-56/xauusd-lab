@@ -40,7 +40,7 @@ Browser ── Cloudflare Pages (web/) ──HTTPS (session)──▶ Cloudflare
 | `ENGINE_SECRET` | GitHub secret → Worker secret; same value as `HINOVA_ENGINE_SECRET` on the engine host | HMAC between Worker and engine (≥ 32 random chars) |
 | `TURNSTILE_SECRET` | GitHub secret → Worker secret | Anti-bot on sign-up and password reset (Cloudflare Turnstile, free) |
 | `RESEND_API_KEY` | GitHub secret → Worker secret | Verification and reset e-mails (provider: Resend; replaceable in `email.js`) |
-| `CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID`, `PAGES_PROJECT` | GitHub variables | Targets |
+| `CLOUDFLARE_ACCOUNT_ID`, `D1_PREVIEW_DATABASE_ID`, `PAGES_PROJECT` | GitHub variables | Targets |
 | `DASHBOARD_ORIGIN`, `ACCOUNTS_API_URL`, `ENGINE_URL`, `EMAIL_FROM`, `TURNSTILE_SITEKEY` | GitHub variables | Public configuration |
 
 Never commit any of these. `.gitignore` excludes `.env*`, `.dev.vars`, `.wrangler/`, `workers/*/wrangler.toml`.
