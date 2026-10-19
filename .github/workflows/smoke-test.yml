@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - ".github/workflows/**"
       - "src/**"
       - "config/**"
       - "tests/**"
@@ -38,7 +39,6 @@ jobs:
       - name: Worker tests + integration with the real Python engine (no network)
         run: node --no-warnings --test workers/accounts-api/test/*.test.js
 
-      # Always create a readable summary, including when an earlier step fails.
       - name: Create diagnostic report
         if: always()
         env:
