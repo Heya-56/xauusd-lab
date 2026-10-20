@@ -52,3 +52,12 @@ validation:
   minimum_trades: 30
   include_costs: true
   include_slippage: true
+
+consensus:                            # poids des 6 agents dans le vote affiché à l'interface
+  weights:
+    ema_cross: 1.0
+    macd_cross: 1.0
+    rsi_reversion: 1.0
+    sql_bollinger_reversion: 1.0
+    sql_vwap_cross: 1.0
+    sql_range_breakout: 1.0

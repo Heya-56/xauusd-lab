@@ -5,3 +5,5 @@ pyyaml
 requests
 httpx
 pytest
+websockets
+duckdb

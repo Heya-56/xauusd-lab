@@ -8,19 +8,41 @@ Bot de démonstration Hinova Digital : architecture complète d'un système de t
 ## Architecture
 
 ```
-Données (CSV MT5/TradingView · Yahoo · IBKR) ─┐
-TradingView webhook (bougie clôturée) ────────┤
-                                              ▼
-                Stratégie (src/strategies) → Moteur de risque (src/engine/risk.py)
-                                              ▼
-              Position papier (TP1 50 % · point mort · TP2 · SL · sortie temps)
-                                              ▼
-                       Journal SQLite (bougies, signaux, décisions, trades)
+ Sources de données                 Bus d'événements (Rust)                 Agents de stratégie
+ ─────────────────                 ───────────────────────                 ───────────────────
+ MT5 (src/feeders/mt5.py) ──┐                                         ┌─▶ Python : ema_cross
+ Replay CSV (feeders/replay)├─ WS ─▶  /publish  ── ticks ──▶ bougies ─┤   Python : macd_cross
+ API broker                 ┘        (tokio)       │      M5 clôturées│   Python : rsi_reversion
+                                                   │                  ├─▶ SQL : sql_bollinger_reversion
+                                      /subscribe ◀─┘ ticks + bars ────┤   SQL : sql_vwap_cross
+                                                   │                  └─▶ SQL : sql_range_breakout
+                                                   ▼                              │
+                                         QuestDB (ILP 9009) ◀── signaux ──────────┘
+                                         ticks · bars · signals
+                                                   │
+                                                   ▼
+                                  API interface (FastAPI) : /api/agents · /api/consensus
 ```
 
-Le même moteur sert au **backtest** et au **temps réel** : ce qui est testé est ce qui tourne.
+- **Bus Rust** (`bus/`) : reçoit les ticks en WebSocket, les diffuse aux agents, agrège les bougies (5 min par défaut) et écrit ticks + bougies dans QuestDB. Tampon et reconnexion si QuestDB tombe.
+- **Agents Python** (`src/strategies/`) : calculés en mémoire à chaque bougie clôturée, préchargés depuis QuestDB au démarrage.
+- **Agents SQL** (`agents/sql/*.sql`) : requêtes exécutées par QuestDB lui-même sur la table `bars`.
+- **QuestDB** : tables `ticks`, `bars`, `signals` (créées automatiquement). Chaque signal porte l'agent, le langage, l'action, entrée, stop, TP1, TP2 et la raison.
+- **Interface** : `/api/agents` (dernier signal des 6 agents) et `/api/consensus` (vote pondéré, poids dans `config/experiment.yml`).
+- **Moteur papier & backtest** (`src/engine/`) : moteur de risque, positions TP1/TP2/point mort, journal SQLite et webhook TradingView.
 
-## Stratégie de démonstration (`ema_cross`)
+### Lancer la pile complète
+
+```bash
+docker compose up -d --build                         # QuestDB + bus + agents + API
+python -m src.feeders.replay XAUUSD_M5.csv           # rejouer un export MT5
+python -m src.feeders.mt5 --url ws://IP:9100/publish # flux temps réel (Windows + MT5)
+```
+
+Sans Docker : `cd bus && cargo run --release`, puis `python -m src.agents.runner all` et `uvicorn src.api:app`.
+Variables utiles : `BUS_TOKEN` (protège `/publish`), `BAR_SECONDS`, `QUESTDB_ILP`, `QUESTDB_HTTP`.
+
+## Moteur papier — stratégie de référence (`ema_cross`)
 
 - Signal : croisement EMA20 / EMA50 à la clôture
 - Stop : 0,5 × ATR(14) · TP1 : 1R sur 50 % · TP2 : 2R sur 50 % · stop au point mort après TP1
@@ -32,7 +54,8 @@ Le même moteur sert au **backtest** et au **temps réel** : ce qui est testé e
 
 ```bash
 pip install -r requirements.txt
-pytest -q                                          # 14 tests
+(cd bus && cargo test)                             # bus Rust
+pytest -q                                          # 23 tests, dont bout en bout bus → agents
 python -m src.main check                           # vérifie la configuration
 python -m src.main backtest --csv XAUUSD_M5.csv    # export MT5 ou TradingView
 python -m src.main backtest --yahoo                # recherche rapide (GC=F, pas le spot)
@@ -49,7 +72,11 @@ Export CSV depuis MT5 : *Affichage › Symboles › Barres › XAUUSD M5 › Exp
 
 | Dossier | Rôle |
 |---|---|
-| `src/strategies/` | Stratégies (ajouter une classe + l'enregistrer dans `registry.py`) |
+| `bus/` | Bus d'événements Rust (WebSocket, agrégation, écriture QuestDB) |
+| `src/strategies/` | 3 agents Python (ajouter une classe + l'enregistrer dans `registry.py`) |
+| `agents/sql/` | 3 agents SQL exécutés par QuestDB |
+| `src/agents/` | Runner des agents, client QuestDB |
+| `src/feeders/` | Sources : replay CSV, MT5 |
 | `src/engine/` | Risque, position, backtest, moteur papier |
 | `src/data/` | Adaptateurs CSV, Yahoo, IBKR |
 | `src/execution/ibkr.py` | Exécution IBKR protégée (bloquée sans `XAUUSD_LIVE_ORDERS=true` + aperçu what-if) |

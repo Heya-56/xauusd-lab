@@ -1,4 +1,6 @@
 from .ema_cross import EmaCross
+from .macd_cross import MacdCross
+from .rsi_reversion import RsiReversion
 
 
 class StrategyRegistry:
@@ -18,6 +20,8 @@ class StrategyRegistry:
 
 
 def default_registry() -> StrategyRegistry:
+    """Les 3 agents de stratégie Python."""
     reg = StrategyRegistry()
-    reg.register(EmaCross())
+    for s in (EmaCross(), MacdCross(), RsiReversion()):
+        reg.register(s)
     return reg

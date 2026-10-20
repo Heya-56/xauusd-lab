@@ -53,3 +53,16 @@ def test_webhook(tmp_path, candles, monkeypatch):
     r = client.post("/webhook/tradingview", json={**body, "secret": "s3cret"})
     assert r.status_code == 200 and r.json()["status"] == "ok"
     assert client.get("/api/status").json()["mode"] == "PAPER"
+
+
+def test_consensus_endpoint(tmp_path, monkeypatch):
+    monkeypatch.setenv("XAUUSD_NO_AUTOAPP", "1")
+    from fastapi.testclient import TestClient
+    from src.agents import questdb
+    from src.api import create_app
+    rows = [{"agent": a, "action": act, "timestamp": "2026-01-05T10:00:00.000000Z"} for a, act in
+            [("ema_cross", "BUY"), ("macd_cross", "BUY"), ("rsi_reversion", "NONE"),
+             ("sql_bollinger_reversion", "SELL"), ("sql_vwap_cross", "BUY"), ("sql_range_breakout", "NONE")]]
+    monkeypatch.setattr(questdb.QuestDB, "query", lambda self, sql: rows)
+    r = TestClient(create_app(db_path=str(tmp_path / "c.sqlite"))).get("/api/consensus").json()
+    assert r["agents"] == 6 and r["direction"] == "LONG" and r["score"] == 0.5

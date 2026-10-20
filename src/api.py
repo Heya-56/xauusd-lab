@@ -74,6 +74,30 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
                   "low": alert.low, "close": alert.close, "volume": alert.volume}
         return trader.on_candle(candle)
 
+    @app.get("/api/agents")
+    def agents(symbol: str = "XAUUSD"):
+        """Dernier résultat de chacun des 6 agents (lu dans QuestDB)."""
+        from src.agents.questdb import QuestDB, _tag
+        try:
+            return QuestDB(ilp="").query(
+                f"SELECT * FROM signals WHERE symbol = '{_tag(symbol)}' LATEST ON timestamp PARTITION BY agent")
+        except Exception as e:
+            raise HTTPException(503, f"QuestDB indisponible : {e}")
+
+    @app.get("/api/consensus")
+    def consensus(symbol: str = "XAUUSD"):
+        """Vote pondéré des agents sur la dernière bougie évaluée (poids dans config : consensus.weights)."""
+        from src.engine.score import weighted_consensus
+        rows = agents(symbol)
+        if not rows:
+            return {"direction": "NO_TRADE", "score": 0, "agents": 0}
+        last = max(r["timestamp"] for r in rows)
+        weights = cfg.get("consensus", {}).get("weights", {})
+        mapping = {"BUY": "LONG", "SELL": "SHORT"}
+        votes = [{"direction": mapping.get(r["action"], "NO_TRADE"), "weight": weights.get(r["agent"], 1.0)}
+                 for r in rows if r["timestamp"] == last]
+        return {"bar_ts": last, "agents": len(votes), **weighted_consensus(votes)}
+
     app.state.trader = trader
     return app
 
