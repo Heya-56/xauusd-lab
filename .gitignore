@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.sqlite
+*.sqlite-*
+results/
+.env
+competition.json
+competition.csv
+lab_result.json
+lab_trades.csv

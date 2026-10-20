@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import requests
@@ -66,7 +66,7 @@ class IBKRAdapter(MarketDataAdapter):
         rows = []
         for b in payload.get("data", []):
             rows.append({
-                "timestamp": datetime.fromtimestamp(b["t"] / 1000),
+                "ts": datetime.fromtimestamp(b["t"] / 1000, tz=timezone.utc).isoformat(),
                 "open": float(b["o"]),
                 "high": float(b["h"]),
                 "low": float(b["l"]),
