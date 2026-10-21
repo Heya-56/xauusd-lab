@@ -24,7 +24,8 @@ class StrategyCandidate(ABC):
     """Une stratégie lit des bougies clôturées et renvoie un Signal pour la dernière."""
 
     name = "candidate"
-    warmup = 1  # nombre minimal de bougies avant de pouvoir signaler
+    warmup = 1        # nombre minimal de bougies avant de pouvoir signaler
+    timeframe = 300   # unité de temps des bougies attendues, en secondes (300 = M5)
 
     @abstractmethod
     def evaluate(self, candles: list[dict]) -> Signal:

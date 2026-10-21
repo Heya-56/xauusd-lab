@@ -43,10 +43,30 @@ def cmd_check(args, cfg):
     print(Experiment(cfg).run().to_json())
 
 
+TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}
+
+
 def cmd_backtest(args, cfg):
     candles = load_candles(args, cfg)
     if not candles:
         sys.exit("Aucune bougie chargée.")
+    if args.strategy == "all":
+        tf = TF_SECONDS.get(args.tf or cfg["experiment"]["timeframe"], 300)
+        rows = []
+        from src.agents.sql_backtest import sql_strategies
+        for strat in default_registry().all() + sql_strategies():
+            if strat.timeframe != tf:
+                continue
+            res = run_backtest(candles, strat, cfg, equity=args.equity)
+            a, o = res["all"], res["out_of_sample"]
+            rows.append([strat.name, a["trades"], a["win_rate_pct"], a["expectancy_r"], a["profit_factor"],
+                         a["max_drawdown_pct"], o["trades"], o["expectancy_r"], o["profit_factor"]])
+        head = ["stratégie", "trades", "gagnants %", "espérance R", "PF", "DD max %", "OOS trades", "OOS esp. R", "OOS PF"]
+        print(" | ".join(head))
+        for r in rows:
+            print(" | ".join(str(x) for x in r))
+        print("\nOOS = hors échantillon (30 % finaux). Moins de 30 trades = non significatif.")
+        return
     strat = default_registry().get(args.strategy or cfg.get("strategy", {}).get("name", "ema_cross"))
     res = run_backtest(candles, strat, cfg, equity=args.equity)
     trades = res.pop("trades")
@@ -101,7 +121,8 @@ def main(argv=None):
         s.add_argument("--start")
         s.add_argument("--end")
         if name == "backtest":
-            s.add_argument("--strategy")
+            s.add_argument("--strategy", help="nom de la stratégie, ou all")
+            s.add_argument("--tf", help="unité de temps du CSV pour --strategy all (5m, 1m…)")
             s.add_argument("--equity", type=float, default=10_000)
             s.add_argument("--out", default="results")
         else:

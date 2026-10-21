@@ -96,11 +96,13 @@ pub struct Bar {
     pub close: f64,
     pub volume: f64,
     pub ticks: u64,
+    /// Spread moyen (ask - bid) sur la bougie, utile pour filtrer le scalping.
+    pub spread: f64,
 }
 
 /// Agrège les ticks en bougies (prix médian) ; renvoie la bougie précédente lorsqu'elle se clôture.
 pub struct BarAggregator {
-    tf_ms: i64,
+    pub tf_ms: i64,
     current: std::collections::HashMap<String, Bar>,
 }
 
@@ -114,7 +116,7 @@ impl BarAggregator {
         let px = t.mid();
         let fresh = || Bar {
             symbol: t.symbol.clone(), tf_s: self.tf_ms / 1000, ts_ms: bucket,
-            open: px, high: px, low: px, close: px, volume: t.volume, ticks: 1,
+            open: px, high: px, low: px, close: px, volume: t.volume, ticks: 1, spread: t.ask - t.bid,
         };
         match self.current.get_mut(&t.symbol) {
             Some(b) if b.ts_ms == bucket => {
@@ -122,6 +124,7 @@ impl BarAggregator {
                 b.low = b.low.min(px);
                 b.close = px;
                 b.volume += t.volume;
+                b.spread += (t.ask - t.bid - b.spread) / (b.ticks as f64 + 1.0);
                 b.ticks += 1;
                 None
             }

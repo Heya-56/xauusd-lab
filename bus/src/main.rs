@@ -16,7 +16,7 @@ use tokio_tungstenite::tungstenite::{handshake::server::{Request, Response}, Mes
 
 struct Bus {
     events: broadcast::Sender<String>,
-    agg: Mutex<BarAggregator>,
+    aggs: Mutex<Vec<BarAggregator>>,
     questdb: Option<mpsc::Sender<String>>,
     token: Option<String>,
 }
@@ -24,13 +24,13 @@ struct Bus {
 impl Bus {
     fn ingest(&self, v: &Value) -> Result<(), String> {
         let t = Tick::from_json(v)?;
-        let closed = self.agg.lock().unwrap().push(&t);
+        let closed: Vec<_> = self.aggs.lock().unwrap().iter_mut().filter_map(|a| a.push(&t)).collect();
         let _ = self.events.send(json!({"type": "tick", "symbol": t.symbol, "ts_ms": t.ts_ms,
             "bid": t.bid, "ask": t.ask, "mid": t.mid(), "volume": t.volume}).to_string());
         if let Some(q) = &self.questdb {
             let _ = q.try_send(ilp::tick_line(&t));
         }
-        if let Some(b) = closed {
+        for b in closed {
             let mut ev = serde_json::to_value(&b).unwrap();
             ev["type"] = json!("bar");
             let _ = self.events.send(ev.to_string());
@@ -100,12 +100,15 @@ async fn main() {
     tracing_subscriber::fmt().with_env_filter(
         tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into())).init();
     let addr = std::env::var("BUS_ADDR").unwrap_or_else(|_| "0.0.0.0:9100".into());
-    let tf: i64 = std::env::var("BAR_SECONDS").ok().and_then(|s| s.parse().ok()).unwrap_or(300);
+    // Plusieurs unités de temps possibles : BAR_SECONDS=300,60 (M5 pour les agents de fond, M1 pour le scalping)
+    let tfs: Vec<i64> = std::env::var("BAR_SECONDS").unwrap_or_else(|_| "300,60".into())
+        .split(',').filter_map(|s| s.trim().parse().ok()).filter(|&n| n > 0).collect();
+    let tf = tfs.iter().map(|t| t.to_string()).collect::<Vec<_>>().join("s, ");
     let questdb = std::env::var("QUESTDB_ILP").ok().filter(|s| !s.is_empty())
         .map(|a| ilp::spawn_writer(a, 500_000));
     let bus = Arc::new(Bus {
         events: broadcast::channel(16_384).0,
-        agg: Mutex::new(BarAggregator::new(tf)),
+        aggs: Mutex::new(tfs.iter().map(|&t| BarAggregator::new(t)).collect()),
         questdb,
         token: std::env::var("BUS_TOKEN").ok().filter(|s| !s.is_empty()),
     });
@@ -149,6 +152,7 @@ mod tests {
         assert!(ag.push(&t("2026-01-05T10:04:59Z", 2648.0)).is_none());
         let bar = ag.push(&t("2026-01-05T10:05:00Z", 2651.0)).unwrap();
         assert_eq!((bar.open, bar.high, bar.low, bar.close, bar.ticks), (2650.1, 2655.1, 2648.1, 2648.1, 3));
+        assert!((bar.spread - 0.2).abs() < 1e-9);
         assert_eq!(bar.symbol, "XAUUSD");
         assert!(ag.push(&t("2026-01-05T09:00:00Z", 1.0)).is_none()); // en retard
     }

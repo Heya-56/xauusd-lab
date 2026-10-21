@@ -33,6 +33,7 @@ paper:
 
 instrument:
   symbol: XAUUSD
+  feed_symbol: GOLD                   # nom de l'or chez le broker (FxPro : GOLD)
   asset_class: spot_gold
   currency: USD
   contract_size: 100                  # 1 lot = 100 oz
@@ -61,3 +62,4 @@ consensus:                            # poids des 6 agents dans le vote affiché
     sql_bollinger_reversion: 1.0
     sql_vwap_cross: 1.0
     sql_range_breakout: 1.0
+    scalp_momentum: 0.0             # le scalping (M1) ne vote pas dans le consensus M5

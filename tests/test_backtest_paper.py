@@ -66,3 +66,19 @@ def test_consensus_endpoint(tmp_path, monkeypatch):
     monkeypatch.setattr(questdb.QuestDB, "query", lambda self, sql: rows)
     r = TestClient(create_app(db_path=str(tmp_path / "c.sqlite"))).get("/api/consensus").json()
     assert r["agents"] == 6 and r["direction"] == "LONG" and r["score"] == 0.5
+
+
+def test_kill_switch(tmp_path, monkeypatch, cfg, candles):
+    monkeypatch.setenv("KILL_SWITCH_FILE", str(tmp_path / "STOP"))
+    monkeypatch.setenv("ADMIN_TOKEN", "adm")
+    monkeypatch.setenv("XAUUSD_NO_AUTOAPP", "1")
+    from fastapi.testclient import TestClient
+    from src import killswitch
+    from src.api import create_app
+    c = TestClient(create_app(db_path=str(tmp_path / "k.sqlite")))
+    assert c.post("/api/kill", json={"engaged": True, "reason": "test"}).json()["engaged"] is True
+    t = PaperTrader(cfg, EmaCross(), Journal(tmp_path / "p.sqlite"))
+    assert t.on_candle(candles[0])["status"] == "halted"
+    assert c.post("/api/kill", json={"engaged": False}).status_code == 401
+    assert c.post("/api/kill", json={"engaged": False}, headers={"X-Admin-Token": "adm"}).json()["engaged"] is False
+    assert not killswitch.engaged()

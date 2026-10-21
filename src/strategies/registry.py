@@ -1,6 +1,7 @@
 from .ema_cross import EmaCross
 from .macd_cross import MacdCross
 from .rsi_reversion import RsiReversion
+from .scalp_momentum import ScalpMomentum
 
 
 class StrategyRegistry:
@@ -20,8 +21,8 @@ class StrategyRegistry:
 
 
 def default_registry() -> StrategyRegistry:
-    """Les 3 agents de stratégie Python."""
+    """Agents Python : 3 agents de fond (M5) + 1 agent de scalping (M1)."""
     reg = StrategyRegistry()
-    for s in (EmaCross(), MacdCross(), RsiReversion()):
+    for s in (EmaCross(), MacdCross(), RsiReversion(), ScalpMomentum()):
         reg.register(s)
     return reg

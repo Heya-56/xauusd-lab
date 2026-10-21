@@ -38,13 +38,15 @@ def run_sql(con, sql):
 
 
 def test_six_agents_registered():
-    assert {a.name for a in default_registry().all()} == {"ema_cross", "macd_cross", "rsi_reversion"}
+    assert {a.name for a in default_registry().all()} == {"ema_cross", "macd_cross", "rsi_reversion", "scalp_momentum"}
     assert set(load_agents()) == {"sql_bollinger_reversion", "sql_vwap_cross", "sql_range_breakout"}
 
 
 def test_python_agents_fire_on_history():
     candles = make_candles(3000)
     for agent in default_registry().all():
+        if agent.timeframe != 300:
+            continue
         actions = {agent.evaluate(candles[: i + 1]).action for i in range(agent.warmup, len(candles), 3)}
         assert actions & {"BUY", "SELL"}, agent.name
 
@@ -121,7 +123,7 @@ def test_end_to_end_bus_agents(tmp_path):
             threading.Thread(target=lambda c=conn, b=buf: [b.append(d.decode()) for d in iter(lambda: c.recv(65536), b"")], daemon=True).start()
     threading.Thread(target=ilp_sink, daemon=True).start()
 
-    env = {**os.environ, "BUS_ADDR": f"127.0.0.1:{bus_port}", "QUESTDB_ILP": f"127.0.0.1:{ilp_port}", "BUS_TOKEN": "t0k"}
+    env = {**os.environ, "BUS_ADDR": f"127.0.0.1:{bus_port}", "QUESTDB_ILP": f"127.0.0.1:{ilp_port}", "BUS_TOKEN": "t0k", "BAR_SECONDS": "300"}
     bus = subprocess.Popen([str(BUS_BIN)], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     csv_path = tmp_path / "bars.csv"
     candles = make_candles(800)

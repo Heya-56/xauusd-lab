@@ -11,7 +11,10 @@ from pathlib import Path
 
 import yaml
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+from src import killswitch
 
 from src.engine.paper import PaperTrader
 from src.journal import Journal
@@ -33,16 +36,36 @@ class CandleAlert(BaseModel):
     volume: float = 0
 
 
+class KillRequest(BaseModel):
+    engaged: bool
+    reason: str = "STOP manuel depuis l'interface"
+
+
 def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAPI:
     cfg = yaml.safe_load(Path(config_path).read_text())
     strategy = default_registry().get(cfg.get("strategy", {}).get("name", "ema_cross"))
     trader = PaperTrader(cfg, strategy, Journal(db_path))
     secret = os.getenv("WEBHOOK_SECRET", "")
-    app = FastAPI(title="XAUUSD Lab", version="1.0.0")
+    admin_token = os.getenv("ADMIN_TOKEN", "")
+    feed_symbol = cfg.get("instrument", {}).get("feed_symbol", "GOLD")
+    app = FastAPI(title="XAUUSD Lab", version="1.1.0")
+    origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()]
+    app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"],
+                       allow_headers=["Content-Type", "X-Admin-Token"])
+
+    def qdb():
+        from src.agents.questdb import QuestDB
+        return QuestDB(ilp="")
+
+    def require_admin(token):
+        if not admin_token:
+            raise HTTPException(503, "ADMIN_TOKEN non configuré côté serveur")
+        if not hmac.compare_digest(token or "", admin_token):
+            raise HTTPException(401, "Jeton administrateur invalide")
 
     @app.get("/")
     def root():
-        return {"project": "XAUUSD Lab", "mode": "PAPER", "live_orders_enabled": False}
+        return {"project": "XAUUSD Lab", "mode": "PAPER", "live_orders_enabled": False, "stop": killswitch.status()}
 
     @app.get("/health")
     def health():
@@ -74,25 +97,57 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
                   "low": alert.low, "close": alert.close, "volume": alert.volume}
         return trader.on_candle(candle)
 
+    @app.get("/api/kill")
+    def kill_status():
+        return killswitch.status()
+
+    @app.post("/api/kill")
+    def kill(req: KillRequest, x_admin_token: str | None = Header(default=None)):
+        """Engager le STOP est toujours permis ; le relâcher exige le jeton administrateur."""
+        if req.engaged:
+            return killswitch.engage(req.reason)
+        require_admin(x_admin_token)
+        return killswitch.release()
+
+    @app.get("/api/market")
+    def market(symbol: str | None = None):
+        from src.agents.questdb import _tag
+        sym = _tag(symbol or feed_symbol)
+        try:
+            rows = qdb().query(f"SELECT timestamp, bid, ask FROM ticks WHERE symbol = '{sym}' LATEST ON timestamp PARTITION BY symbol")
+        except Exception as e:
+            raise HTTPException(503, f"QuestDB indisponible : {e}")
+        return {"symbol": sym, **(rows[0] if rows else {})}
+
+    @app.get("/api/bars")
+    def bars(symbol: str | None = None, tf: int = 300, limit: int = 120):
+        try:
+            return qdb().recent_bars(symbol or feed_symbol, f"{int(tf)}s", min(int(limit), 1000))
+        except Exception as e:
+            raise HTTPException(503, f"QuestDB indisponible : {e}")
+
     @app.get("/api/agents")
-    def agents(symbol: str = "XAUUSD"):
+    def agents(symbol: str | None = None):
         """Dernier résultat de chacun des 6 agents (lu dans QuestDB)."""
         from src.agents.questdb import QuestDB, _tag
         try:
             return QuestDB(ilp="").query(
-                f"SELECT * FROM signals WHERE symbol = '{_tag(symbol)}' LATEST ON timestamp PARTITION BY agent")
+                f"SELECT * FROM signals WHERE symbol = '{_tag(symbol or feed_symbol)}' LATEST ON timestamp PARTITION BY agent")
         except Exception as e:
             raise HTTPException(503, f"QuestDB indisponible : {e}")
 
     @app.get("/api/consensus")
-    def consensus(symbol: str = "XAUUSD"):
+    def consensus(symbol: str | None = None):
         """Vote pondéré des agents sur la dernière bougie évaluée (poids dans config : consensus.weights)."""
         from src.engine.score import weighted_consensus
         rows = agents(symbol)
         if not rows:
             return {"direction": "NO_TRADE", "score": 0, "agents": 0}
-        last = max(r["timestamp"] for r in rows)
         weights = cfg.get("consensus", {}).get("weights", {})
+        rows = [r for r in rows if weights.get(r["agent"], 1.0) > 0]
+        if not rows:
+            return {"direction": "NO_TRADE", "score": 0, "agents": 0}
+        last = max(r["timestamp"] for r in rows)
         mapping = {"BUY": "LONG", "SELL": "SHORT"}
         votes = [{"direction": mapping.get(r["action"], "NO_TRADE"), "weight": weights.get(r["agent"], 1.0)}
                  for r in rows if r["timestamp"] == last]

@@ -15,8 +15,8 @@ pub fn tick_line(t: &Tick) -> String {
 }
 
 pub fn bar_line(b: &Bar) -> String {
-    format!("bars,symbol={},tf={}s open={},high={},low={},close={},volume={},ticks={}i {}\n",
-        esc_tag(&b.symbol), b.tf_s, b.open, b.high, b.low, b.close, b.volume, b.ticks, b.ts_ms * 1_000_000)
+    format!("bars,symbol={},tf={}s open={},high={},low={},close={},volume={},ticks={}i,spread={} {}\n",
+        esc_tag(&b.symbol), b.tf_s, b.open, b.high, b.low, b.close, b.volume, b.ticks, b.spread, b.ts_ms * 1_000_000)
 }
 
 /// Lance la tâche d'écriture ; renvoie l'émetteur. Si QuestDB est indisponible, les lignes

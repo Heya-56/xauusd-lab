@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 
 import websockets
 
+from src import killswitch
 from src.agents.questdb import QuestDB, signal_line
 from src.agents.sql_agents import load_agents, render, to_signal
 from src.strategies.registry import default_registry
@@ -30,7 +31,7 @@ HISTORY = 600
 
 def bar_to_candle(ev: dict) -> dict:
     ts = datetime.fromtimestamp(ev["ts_ms"] / 1000, tz=timezone.utc).isoformat()
-    return {"ts": ts, **{k: ev[k] for k in ("open", "high", "low", "close", "volume")}}
+    return {"ts": ts, "spread": ev.get("spread", 0.0), **{k: ev[k] for k in ("open", "high", "low", "close", "volume")}}
 
 
 class AgentHub:
@@ -38,25 +39,27 @@ class AgentHub:
         self.db = db
         self.py = default_registry().all() if mode in ("python", "all") else []
         self.sql = load_agents() if mode in ("sql", "all") else {}
-        self.history: dict[str, deque] = defaultdict(lambda: deque(maxlen=HISTORY))
+        self.history: dict[tuple, deque] = defaultdict(lambda: deque(maxlen=HISTORY))
         self.sql_delay = float(os.getenv("SQL_DELAY_S", "1.5"))
+        self.sql_tf = int(os.getenv("SQL_AGENTS_TF", "300"))
+        self.halted_logged = False
 
-    def warmup(self, symbol="XAUUSD", tf="300s"):
-        if not self.py:
-            return
-        try:
-            bars = self.db.recent_bars(symbol, tf, HISTORY)
-            self.history[symbol].extend(bars)
-            log.info("préchargement : %d bougies %s depuis QuestDB", len(bars), symbol)
-        except Exception as e:  # QuestDB pas encore prêt : on démarre à froid
-            log.warning("préchargement impossible (%s) — démarrage à froid", e)
+    def warmup(self, symbol=None):
+        symbol = symbol or os.getenv("FEED_SYMBOL", "GOLD")
+        for tf in sorted({a.timeframe for a in self.py}):
+            try:
+                bars = self.db.recent_bars(symbol, f"{tf}s", HISTORY)
+                self.history[(symbol, tf)].extend(bars)
+                log.info("préchargement : %d bougies %s %ss depuis QuestDB", len(bars), symbol, tf)
+            except Exception as e:  # QuestDB pas encore prêt : on démarre à froid
+                log.warning("préchargement %ss impossible (%s) — démarrage à froid", tf, e)
 
-    def run_python(self, symbol: str, candle: dict) -> list[dict]:
-        h = self.history[symbol]
+    def run_python(self, symbol: str, candle: dict, tf: int = 300) -> list[dict]:
+        h = self.history[(symbol, tf)]
         h.append(candle)
         candles = list(h)
         out = []
-        for agent in self.py:
+        for agent in (a for a in self.py if a.timeframe == tf):
             sig = agent.evaluate(candles).to_dict()
             out.append({"agent": agent.name, "lang": "python", **sig})
             self.db.write(signal_line(agent.name, "python", symbol, candle["ts"], sig))
@@ -76,9 +79,16 @@ class AgentHub:
         return out
 
     async def on_bar(self, ev: dict) -> list[dict]:
-        candle, symbol, tf = bar_to_candle(ev), ev["symbol"], f"{ev['tf_s']}s"
-        results = self.run_python(symbol, candle) if self.py else []
-        if self.sql:
+        if killswitch.engaged():
+            if not self.halted_logged:
+                log.warning("STOP engagé (%s) — agents à l'arrêt", killswitch.status().get("reason"))
+                self.halted_logged = True
+            return []
+        self.halted_logged = False
+        candle, symbol, tf_s = bar_to_candle(ev), ev["symbol"], int(ev["tf_s"])
+        tf = f"{tf_s}s"
+        results = self.run_python(symbol, candle, tf_s) if self.py else []
+        if self.sql and tf_s == self.sql_tf:
             await asyncio.sleep(self.sql_delay)
             results += await asyncio.to_thread(self.run_sql, symbol, tf, candle["ts"])
         for r in results:

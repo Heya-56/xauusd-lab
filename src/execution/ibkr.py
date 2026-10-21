@@ -52,6 +52,9 @@ class IBKRExecution:
         return self._request("POST", f"/iserver/account/{self.account_id}/orders/whatif", json={"orders": [order]})
 
     def place(self, side, quantity, order_type="MKT", price=None, client_order_id=None):
+        from src import killswitch
+        if killswitch.engaged():
+            return OrderResult("BLOCKED", {"reason": "STOP engagé", **killswitch.status()})
         if os.getenv("XAUUSD_LIVE_ORDERS", "false").lower() != "true":
             return OrderResult("BLOCKED", {"reason": "XAUUSD_LIVE_ORDERS is not true; no live order submitted"})
         if not self.account_id:

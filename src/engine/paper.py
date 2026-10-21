@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
+from src import killswitch
 from src.engine.backtest import SessionFilter
 from src.engine.position import Position
 from src.engine.risk import RiskManager
@@ -50,6 +51,17 @@ class PaperTrader:
 
         events = []
         pos = self._load_pos()
+        if killswitch.engaged():
+            if pos and pos.is_open:
+                before = pos.realized
+                pos.force_close(c["close"], c["ts"], "STOP")
+                acct["equity"] += pos.realized - before
+                acct["realized_today"] += pos.realized - before
+                self.j.add_trade(pos, self.mode)
+                events.append({"type": "closed", "outcome": "STOP", "pnl": round(pos.realized, 2)})
+            self._save_pos(None)
+            self.j.set("account", acct)
+            return {"status": "halted", "ts": c["ts"], "events": events, "account": acct}
         if pos:
             before = pos.realized
             pos.update(c)
