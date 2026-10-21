@@ -181,3 +181,9 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   .footer-center { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- mode léger (petites machines) : on coupe les effets les plus coûteux ---------- */
+body.lite .scanline, body.lite .orb-ring, body.lite .orb-wrap::after { display: none; }
+body.lite .orb-aura { animation: none; filter: none; }
+body.lite .command-bar { backdrop-filter: none; }
+body.lite .stop-button:disabled { animation: none; }

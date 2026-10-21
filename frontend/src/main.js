@@ -6,7 +6,10 @@ import { createChart } from './chart.js'
 const $ = (s) => document.querySelector(s)
 const app = $('#app')
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-let still = reduced, frame = 0, ratio = 1, tf = 300
+// Mode léger automatique sur les petites machines (≤ 4 Go ou ≤ 4 cœurs) : 20 i/s, effets coûteux coupés.
+const lite = (navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || /lite/.test(location.search)
+if (lite) document.body.classList.add('lite')
+let still = reduced, frame = 0, ratio = 1, tf = 300, lastDraw = 0
 const space = $('#space-canvas'), sctx = space.getContext('2d')
 const orb = createOrb($('#orb-canvas'))
 const chart = createChart($('#chart'))
@@ -14,7 +17,7 @@ const st = { kill: { engaged: false }, setups: [], online: false, price: null }
 const fmt = (n, d = 2) => (n == null || Number.isNaN(n) ? '—' : Number(n).toFixed(d))
 
 // ---------- fond étoilé ----------
-const stars = Array.from({ length: 160 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random(), s: Math.random() * 1.4 + .2, p: Math.random() * 6.28, v: Math.random() * .8 + .2 }))
+const stars = Array.from({ length: lite ? 50 : 160 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random(), s: Math.random() * 1.4 + .2, p: Math.random() * 6.28, v: Math.random() * .8 + .2 }))
 function drawSpace(t) {
   const w = innerWidth, h = innerHeight
   sctx.clearRect(0, 0, w, h)
@@ -25,13 +28,18 @@ function drawSpace(t) {
   }
 }
 function resize() {
-  ratio = Math.min(devicePixelRatio || 1, 1.7)
+  ratio = lite ? 1 : Math.min(devicePixelRatio || 1, 1.7)
   space.width = innerWidth * ratio; space.height = innerHeight * ratio
   space.style.width = innerWidth + 'px'; space.style.height = innerHeight + 'px'
   sctx.setTransform(ratio, 0, 0, ratio, 0, 0)
   orb.resize(ratio); chart.resize(ratio); drawSpace(performance.now()); orb.draw(performance.now(), true)
 }
-function loop(t) { frame = requestAnimationFrame(loop); drawSpace(t); orb.draw(t, still) }
+function loop(t) {
+  frame = requestAnimationFrame(loop)
+  if (document.hidden || (still && t - lastDraw < 1000)) return
+  if (lite && t - lastDraw < 50) return          // ~20 images/s en mode léger
+  lastDraw = t; if (!lite) drawSpace(t); orb.draw(t, still)
+}
 
 // ---------- état visuel ----------
 function applyState() {
