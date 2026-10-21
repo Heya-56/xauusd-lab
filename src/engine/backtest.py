@@ -8,6 +8,8 @@ from zoneinfo import ZoneInfo
 from src.engine.position import Position
 from src.engine.risk import RiskManager
 
+LOOKBACK = 600  # fenêtre glissante : temps de calcul linéaire au lieu de quadratique
+
 DAYS = {"MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5, "SUN": 6}
 
 
@@ -96,7 +98,7 @@ def run_backtest(candles: list[dict], strategy, cfg: dict, equity: float = 10_00
 
         if pos is not None or i + 1 < strategy.warmup or not sess.allows(bar["ts"]):
             continue
-        sig = strategy.evaluate(candles[: i + 1])
+        sig = strategy.evaluate(candles[max(0, i + 1 - LOOKBACK): i + 1])
         if sig.action == "NONE":
             continue
         d = rm.evaluate(equity=equity, day_start_equity=day_start_eq, realized_today=realized_today,
