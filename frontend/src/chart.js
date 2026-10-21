@@ -3,7 +3,7 @@ import { C, rgba } from './palette.js'
 
 export function createChart(canvas) {
   const ctx = canvas.getContext('2d')
-  let data = { bars: [], positions: [], setups: [], price: null }
+  let data = { bars: [], positions: [], setups: [], paper: [], preview: null, price: null }
 
   function resize(ratio) {
     const w = canvas.clientWidth, h = canvas.clientHeight
@@ -14,7 +14,7 @@ export function createChart(canvas) {
   function draw() {
     const w = canvas.clientWidth, h = canvas.clientHeight
     ctx.clearRect(0, 0, w, h)
-    const { bars, positions, setups, price } = data
+    const { bars, positions, setups, paper, preview, price } = data
     const axis = 70, top = 14, bottom = h - 14
     if (!bars.length) {
       ctx.fillStyle = rgba(C.grey, .8); ctx.font = '12px "Space Mono", monospace'; ctx.textAlign = 'center'
@@ -23,6 +23,8 @@ export function createChart(canvas) {
     const levels = []
     positions.forEach((p) => levels.push(p.entry, p.sl, p.tp1, p.tp2))
     setups.forEach((s) => levels.push(s.entry, s.sl, s.tp1, s.tp2))
+    paper.forEach((p) => levels.push(p.entry, p.sl, p.tp1, p.tp2))
+    if (preview) levels.push(preview.sl, preview.tp1, preview.tp2)
     const vals = bars.flatMap((b) => [b.high, b.low]).concat(levels.filter((v) => v != null), price ?? [])
     let hi = Math.max(...vals), lo = Math.min(...vals); const padv = (hi - lo) * .06 || 1; hi += padv; lo -= padv
     const y = (p) => top + (hi - p) / (hi - lo) * (bottom - top)
@@ -70,6 +72,17 @@ export function createChart(canvas) {
       line(p.entry, p.side === 'BUY' ? C.green : C.red, [], `POSITION ${p.side === 'BUY' ? 'ACHAT' : 'VENTE'} ${p.volume}`, 1.6)
       line(p.sl, C.red, [6, 5], 'SL'); line(p.tp1, C.green, [6, 5], 'TP1'); line(p.tp2, C.gold, [6, 5], 'TP2')
     })
+    paper.forEach((p) => {
+      line(p.entry, p.side === 'BUY' ? C.green : C.red, [], `PAPIER ${p.side === 'BUY' ? 'ACHAT' : 'VENTE'} ${p.lots}`, 1.6)
+      line(p.sl, C.red, [6, 5], p.sl === p.entry ? 'SL (POINT MORT)' : 'SL')
+      if (!p.tp1_done) line(p.tp1, C.green, [6, 5], 'TP1')
+      line(p.tp2, C.gold, [6, 5], 'TP2')
+    })
+    if (preview && !paper.length) {
+      ctx.save(); ctx.globalAlpha = .45
+      line(preview.sl, C.red, [2, 6], 'APERÇU SL', 1); line(preview.tp1, C.green, [2, 6], 'APERÇU TP1', 1); line(preview.tp2, C.gold, [2, 6], 'APERÇU TP2', 1)
+      ctx.restore()
+    }
     if (price != null) line(price, C.gold, [1, 3], 'PRIX', 1)
     placeTags()
 

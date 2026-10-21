@@ -7,6 +7,8 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+import os
+os.environ.setdefault("XAUUSD_NO_BUS", "1")
 
 
 @pytest.fixture

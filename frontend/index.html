@@ -28,6 +28,8 @@
           <div class="quote-main"><small>BID</small><b id="bid">—</b></div>
           <div class="quote-row"><span><small>ASK</small><b id="ask">—</b></span><span><small>SPREAD</small><b id="spread">—</b></span></div>
         </div>
+        <div class="rail-heading spaced"><span class="micro-label">POSITIONS PAPIER</span><span class="rail-index" id="paper-equity">—</span></div>
+        <div id="paper-positions" class="positions"><p class="empty">Aucune position papier.</p></div>
         <div class="rail-heading spaced"><span class="micro-label">POSITIONS MT5</span><span class="rail-index" id="pos-count">0</span></div>
         <div id="positions" class="positions"><p class="empty">Aucune position ouverte.<br><small>Ouvre une position dans MT5 : elle apparaît ici et sur le graphique.</small></p></div>
       </aside>
@@ -57,6 +59,20 @@
           <span class="stop-ring"></span><b id="stop-label">STOP</b><small id="stop-sub">FREIN D'URGENCE · 1 TAP</small>
         </button>
         <button class="release-button" id="release-btn" hidden>RELÂCHER LE FREIN (ADMIN)</button>
+
+        <div class="ticket" id="ticket">
+          <div class="card-head"><span class="micro-label">ORDRE PAPIER</span><span class="live-pill">SIMULÉ</span></div>
+          <div class="side-seg" role="radiogroup" aria-label="Sens">
+            <button class="buy on" data-side="BUY" role="radio" aria-checked="true">ACHAT</button>
+            <button class="sell" data-side="SELL" role="radio" aria-checked="false">VENTE</button>
+          </div>
+          <div class="stepper" data-k="lots"><span>LOTS</span><button data-d="-1" aria-label="moins">−</button><b id="t-lots">0.01</b><button data-d="1" aria-label="plus">+</button></div>
+          <div class="stepper" data-k="dist"><span>STOP $</span><button data-d="-1" aria-label="moins">−</button><b id="t-dist">5.00</b><button data-d="1" aria-label="plus">+</button></div>
+          <div class="stepper" data-k="r1"><span>TP1</span><button data-d="-1" aria-label="moins">−</button><b id="t-r1">1.0 R</b><button data-d="1" aria-label="plus">+</button></div>
+          <div class="stepper" data-k="r2"><span>TP2</span><button data-d="-1" aria-label="moins">−</button><b id="t-r2">2.0 R</b><button data-d="1" aria-label="plus">+</button></div>
+          <div class="ticket-levels"><span class="sl">SL <b id="t-sl">—</b></span><span class="tp1">TP1 <b id="t-tp1">—</b></span><span class="tp2">TP2 <b id="t-tp2">—</b></span><span>RISQUE <b id="t-risk">—</b></span></div>
+          <button class="open-btn buy" id="open-btn">OUVRIR ACHAT PAPIER</button>
+        </div>
 
         <div class="scan-card" id="scan-card">
           <div class="card-head"><span class="micro-label">SCAN DE CONFIGURATIONS</span><span class="live-pill" id="scan-pill">VEILLE</span></div>

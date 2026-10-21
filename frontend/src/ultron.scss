@@ -112,6 +112,29 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .stop-button:disabled b { font-size: clamp(28px, 2.6vw, 38px); letter-spacing: .15em; }
 .release-button { min-height: 48px; border: 1px solid var(--line-hot); background: rgba(10, 40, 40, .6); color: var(--teal-soft); font: 11px var(--mono); letter-spacing: 1px; cursor: pointer; }
 
+/* ---------- ticket papier ---------- */
+.ticket { border: 1px solid var(--line); background: linear-gradient(145deg, rgba(4, 30, 30, .86), rgba(2, 16, 18, .84)); padding: 14px; display: grid; gap: 8px; }
+.side-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.side-seg button { min-height: 48px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 18px; font-weight: 700; letter-spacing: 2px; cursor: pointer; }
+.side-seg .buy.on { background: rgba(46, 229, 157, .18); border-color: var(--green); color: var(--green); }
+.side-seg .sell.on { background: rgba(255, 77, 94, .18); border-color: var(--red); color: var(--red); }
+.stepper { display: grid; grid-template-columns: 70px 48px 1fr 48px; align-items: center; gap: 6px; }
+.stepper span { font: 10px var(--mono); color: var(--muted); }
+.stepper button { min-height: 44px; border: 1px solid var(--line-hot); background: rgba(10, 40, 40, .6); color: var(--teal); font-size: 22px; cursor: pointer; }
+.stepper button:active { background: rgba(25, 227, 200, .25); }
+.stepper b { text-align: center; font: 700 16px var(--mono); }
+.ticket-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font: 10px var(--mono); color: var(--muted); padding: 4px 0; }
+.ticket-levels b { color: var(--white); }
+.open-btn, .take-btn { min-height: 54px; border: 0; font-size: 17px; font-weight: 800; letter-spacing: 1.5px; cursor: pointer; color: #02110f; }
+.open-btn.buy { background: var(--green); } .open-btn.sell { background: var(--red); color: #fff; }
+.open-btn:disabled { opacity: .4; cursor: not-allowed; }
+.take-btn { grid-column: 1 / -1; min-height: 46px; background: var(--teal); font-size: 14px; margin-top: 4px; }
+.pos.paper { border-style: dashed; border-left-style: solid; }
+.pos-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+.pos-actions button { min-height: 44px; border: 1px solid var(--line-hot); background: rgba(10, 40, 40, .6); color: var(--teal-soft); font: 10px var(--mono); cursor: pointer; }
+.pos-actions button.danger { border-color: var(--red); color: #ffb3bb; }
+.pos-actions button:disabled { opacity: .35; }
+
 /* ---------- scan ---------- */
 .scan-card { padding: 14px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--line); }

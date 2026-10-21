@@ -53,6 +53,28 @@ class PositionsReport(BaseModel):
     positions: list[MT5Position]
 
 
+class PaperOpen(BaseModel):
+    side: str
+    lots: float = 0.01
+    sl: float | None = None
+    tp1: float | None = None
+    tp2: float | None = None
+    sl_dist: float | None = None
+    r1: float = 1.0
+    r2: float = 2.0
+
+
+class PaperModify(BaseModel):
+    id: str
+    sl: float | None = None
+    tp1: float | None = None
+    tp2: float | None = None
+
+
+class PaperClose(BaseModel):
+    id: str
+
+
 class KillRequest(BaseModel):
     engaged: bool
     reason: str = "STOP manuel depuis l'interface"
@@ -70,9 +92,84 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"],
                        allow_headers=["Content-Type", "X-Admin-Token"])
 
+    import time as _time
+    _cache: dict = {}
+
+    class _CachedQDB:
+        """Évite de solliciter QuestDB à chaque rafraîchissement d'écran : réponses gardées 1,5 s."""
+        def __init__(self):
+            from src.agents.questdb import QuestDB
+            self.q = QuestDB(ilp="")
+
+        def query(self, sql):
+            hit = _cache.get(sql)
+            if hit and _time.monotonic() - hit[0] < 1.5:
+                return hit[1]
+            rows = self.q.query(sql)
+            _cache[sql] = (_time.monotonic(), rows)
+            return rows
+
+        def recent_bars(self, symbol, tf, limit):
+            from src.agents.questdb import QuestDB
+            return QuestDB.recent_bars(self, symbol, tf, limit)
+
     def qdb():
-        from src.agents.questdb import QuestDB
-        return QuestDB(ilp="")
+        return _CachedQDB()
+
+    # ---------- trading papier manuel, suivi au tick par le bus ----------
+    from src.engine.manual_paper import ManualPaperBook, PaperError
+    book = ManualPaperBook(Journal(db_path), float(cfg.get("paper", {}).get("starting_equity", 10_000)),
+                           float(cfg.get("instrument", {}).get("contract_size", 100)))
+    app.state.book = book
+
+    async def follow_bus():
+        import asyncio, json
+        import websockets
+        url = os.getenv("BUS_URL", "ws://127.0.0.1:9100/subscribe")
+        while True:
+            try:
+                async with websockets.connect(url, max_size=2**22) as ws:
+                    async for raw in ws:
+                        ev = json.loads(raw)
+                        if ev.get("type") == "tick" and ev.get("symbol") == feed_symbol:
+                            from datetime import datetime, timezone
+                            ts = datetime.fromtimestamp(ev["ts_ms"] / 1000, tz=timezone.utc).isoformat()
+                            book.on_tick(ev["bid"], ev["ask"], ts)
+            except Exception:
+                await asyncio.sleep(3)
+
+    @app.on_event("startup")
+    async def _start_follow():
+        if os.getenv("XAUUSD_NO_BUS") != "1":
+            import asyncio
+            app.state.follow = asyncio.create_task(follow_bus())
+
+    @app.get("/api/paper")
+    def paper_view():
+        return book.view()
+
+    @app.post("/api/paper/open")
+    def paper_open(req: PaperOpen):
+        if killswitch.engaged():
+            raise HTTPException(423, "STOP engagé : ouverture refusée")
+        try:
+            return book.open(req.side, req.lots, req.sl, req.tp1, req.tp2, req.sl_dist, req.r1, req.r2)
+        except PaperError as e:
+            raise HTTPException(400, str(e))
+
+    @app.post("/api/paper/modify")
+    def paper_modify(req: PaperModify):
+        try:
+            return book.modify(req.id, req.sl, req.tp1, req.tp2)
+        except PaperError as e:
+            raise HTTPException(400, str(e))
+
+    @app.post("/api/paper/close")
+    def paper_close(req: PaperClose):
+        try:
+            return book.close(req.id)
+        except PaperError as e:
+            raise HTTPException(400, str(e))
 
     def require_admin(token):
         if not admin_token:
@@ -153,7 +250,9 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
     def kill(req: KillRequest, x_admin_token: str | None = Header(default=None)):
         """Engager le STOP est toujours permis ; le relâcher exige le jeton administrateur."""
         if req.engaged:
-            return killswitch.engage(req.reason)
+            st = killswitch.engage(req.reason)
+            book.close_all("STOP")
+            return st
         require_admin(x_admin_token)
         return killswitch.release()
 
