@@ -31,6 +31,13 @@ Bot de démonstration Hinova Digital : architecture complète d'un système de t
 - **Interface** : `/api/agents` (dernier signal des 6 agents) et `/api/consensus` (vote pondéré, poids dans `config/experiment.yml`).
 - **Moteur papier & backtest** (`src/engine/`) : moteur de risque, positions TP1/TP2/point mort, journal SQLite et webhook TradingView.
 
+### Tableau de bord (Arwes) et frein d'urgence
+
+- Interface servie par l'API sur **http://127.0.0.1:8000/ui/** (sources dans `frontend/`, React + Arwes ; `npm run build` régénère `frontend/dist`).
+- Gros bouton rouge **STOP** : agents à l'arrêt, position papier fermée, ordres broker refusés. Engager est toujours possible ; relâcher exige `ADMIN_TOKEN`.
+- Agent **scalp_momentum** en M1 (le bus produit M5 et M1 : `BAR_SECONDS=300,60`). Agressif par construction : papier uniquement.
+- `python -m src.main backtest --csv GOLD_M5.csv --strategy all` : tableau comparatif des 6 agents M5 (SQL exécuté via DuckDB).
+
 ### Lancer la pile complète
 
 ```bash

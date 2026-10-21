@@ -153,6 +153,16 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
                  for r in rows if r["timestamp"] == last]
         return {"bar_ts": last, "agents": len(votes), **weighted_consensus(votes)}
 
+    ui = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+    if ui.is_dir():
+        from fastapi.responses import RedirectResponse
+        from fastapi.staticfiles import StaticFiles
+        app.mount("/ui", StaticFiles(directory=ui, html=True), name="ui")
+
+        @app.get("/dashboard", include_in_schema=False)
+        def dashboard():
+            return RedirectResponse("/ui/")
+
     app.state.trader = trader
     return app
 
