@@ -33,8 +33,8 @@ def signal_line(agent: str, lang: str, symbol: str, bar_ts, sig: dict) -> str:
 
 class QuestDB:
     def __init__(self, ilp: str | None = None, http: str | None = None):
-        self.ilp = ilp if ilp is not None else os.getenv("QUESTDB_ILP", "localhost:9009")
-        self.http = (http if http is not None else os.getenv("QUESTDB_HTTP", "http://localhost:9000")).rstrip("/")
+        self.ilp = ilp if ilp is not None else os.getenv("QUESTDB_ILP", "127.0.0.1:9009")
+        self.http = (http if http is not None else os.getenv("QUESTDB_HTTP", "http://127.0.0.1:9000")).rstrip("/")
         self._sock = None
 
     def write(self, lines: str) -> None:

@@ -35,7 +35,7 @@ async def stream(symbol: str, url: str, poll: float):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--symbol", default="XAUUSD")
-    p.add_argument("--url", default=os.getenv("BUS_PUBLISH_URL", "ws://localhost:9100/publish"))
+    p.add_argument("--url", default=os.getenv("BUS_PUBLISH_URL", "ws://127.0.0.1:9100/publish"))
     p.add_argument("--poll", type=float, default=0.05)
     a = p.parse_args()
     if os.getenv("BUS_TOKEN") and "token=" not in a.url:

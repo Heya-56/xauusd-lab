@@ -45,7 +45,7 @@ async def replay(path: str, url: str, speed: float, spread: float, tf_s: int):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("csv")
-    p.add_argument("--url", default=os.getenv("BUS_PUBLISH_URL", "ws://localhost:9100/publish"))
+    p.add_argument("--url", default=os.getenv("BUS_PUBLISH_URL", "ws://127.0.0.1:9100/publish"))
     p.add_argument("--speed", type=float, default=0.0)
     p.add_argument("--spread", type=float, default=0.3)
     p.add_argument("--tf", type=int, default=300)

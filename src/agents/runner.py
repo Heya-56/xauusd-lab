@@ -5,7 +5,7 @@ fait calculer les agents puis écrit leurs signaux dans QuestDB.
   python -m src.agents.runner sql      # les 3 agents SQL (exécutés par QuestDB)
   python -m src.agents.runner all      # les 6
 
-Variables : BUS_URL (ws://localhost:9100/subscribe), QUESTDB_ILP (localhost:9009), QUESTDB_HTTP (http://localhost:9000),
+Variables : BUS_URL (ws://127.0.0.1:9100/subscribe), QUESTDB_ILP (localhost:9009), QUESTDB_HTTP (http://127.0.0.1:9000),
             SQL_DELAY_S (délai avant requête SQL, le temps que QuestDB valide la bougie, défaut 1.5).
 """
 from __future__ import annotations
@@ -88,7 +88,7 @@ class AgentHub:
 
 
 async def main(mode: str):
-    url = os.getenv("BUS_URL", "ws://localhost:9100/subscribe")
+    url = os.getenv("BUS_URL", "ws://127.0.0.1:9100/subscribe")
     hub = AgentHub(mode, QuestDB())
     hub.warmup()
     log.info("agents %s : %s", mode, [a.name for a in hub.py] + list(hub.sql))
