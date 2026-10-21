@@ -31,9 +31,12 @@ Bot de démonstration Hinova Digital : architecture complète d'un système de t
 - **Interface** : `/api/agents` (dernier signal des 6 agents) et `/api/consensus` (vote pondéré, poids dans `config/experiment.yml`).
 - **Moteur papier & backtest** (`src/engine/`) : moteur de risque, positions TP1/TP2/point mort, journal SQLite et webhook TradingView.
 
-### Tableau de bord (Arwes) et frein d'urgence
+### Flight Deck (interface ULTRON) et frein d'urgence
 
-- Interface servie par l'API sur **http://127.0.0.1:8000/ui/** (sources dans `frontend/`, React + Arwes ; `npm run build` régénère `frontend/dist`).
+- Interface servie par l'API sur **http://127.0.0.1:8000/ui/** — style ULTRON (prototype Rū-fau-tumu), vanilla JS + SCSS, tactile, sources dans `frontend/` (`npm run build` régénère `frontend/dist`).
+- Noyau (orbe) : teal = veille, doré = configuration détectée, rouge = STOP. Le détail des agents n'est pas affiché.
+- Positions MT5 lues en lecture seule par le pont (`/api/positions`) et tracées : entrée, SL, TP1 (1R), TP2 (TP MT5 ou 2R) en pointillés.
+- Scan (`/api/scan`) : configuration quand ≥ 2 agents M5 concordent sans opposition (1 pour le scalping M1) ; affichée comme « non validée par backtest ».
 - Gros bouton rouge **STOP** : agents à l'arrêt, position papier fermée, ordres broker refusés. Engager est toujours possible ; relâcher exige `ADMIN_TOKEN`.
 - Agent **scalp_momentum** en M1 (le bus produit M5 et M1 : `BAR_SECONDS=300,60`). Agressif par construction : papier uniquement.
 - `python -m src.main backtest --csv GOLD_M5.csv --strategy all` : tableau comparatif des 6 agents M5 (SQL exécuté via DuckDB).

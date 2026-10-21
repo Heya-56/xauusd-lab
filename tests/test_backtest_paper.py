@@ -82,3 +82,27 @@ def test_kill_switch(tmp_path, monkeypatch, cfg, candles):
     assert c.post("/api/kill", json={"engaged": False}).status_code == 401
     assert c.post("/api/kill", json={"engaged": False}, headers={"X-Admin-Token": "adm"}).json()["engaged"] is False
     assert not killswitch.engaged()
+
+
+def test_scan_and_positions(tmp_path, monkeypatch):
+    monkeypatch.setenv("XAUUSD_NO_AUTOAPP", "1")
+    from fastapi.testclient import TestClient
+    from src.agents import questdb
+    from src.api import create_app
+    from src.scan import build_scan
+    ts = "2026-10-21T06:35:00.000000Z"
+    rows = [{"agent": "macd_cross", "action": "BUY", "entry": 4120, "stop_loss": 4118, "timestamp": ts},
+            {"agent": "sql_vwap_cross", "action": "BUY", "entry": 4120, "stop_loss": 4116, "timestamp": ts},
+            {"agent": "ema_cross", "action": "NONE", "timestamp": ts}]
+    s = build_scan(rows, {}, {"macd_cross": 300, "ema_cross": 300})
+    assert s[0]["side"] == "BUY" and s[0]["sl"] == 4117 and s[0]["tp1"] == 4123 and s[0]["tp2"] == 4126
+    rows.append({"agent": "sql_range_breakout", "action": "SELL", "entry": 4120, "stop_loss": 4122, "timestamp": ts})
+    assert build_scan(rows, {}, {}) == []   # désaccord : rien
+    monkeypatch.setattr(questdb.QuestDB, "query", lambda self, sql: rows[:3])
+    c = TestClient(create_app(db_path=str(tmp_path / "s.sqlite")))
+    assert c.get("/api/scan").json()["setups"][0]["side"] == "BUY"
+    r = c.post("/api/positions", json={"positions": [{"ticket": 1, "symbol": "GOLD", "type": 1, "volume": 0.01,
+                                                       "price_open": 4120, "sl": 4124, "tp": 0}]})
+    assert r.json()["count"] == 1
+    p = c.get("/api/positions").json()["items"][0]
+    assert p["side"] == "SELL" and p["tp1"] == 4116 and p["tp2"] == 4112

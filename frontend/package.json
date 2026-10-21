@@ -1,26 +1,8 @@
 {
-  "name": "xauusd-lab-ui",
-  "version": "1.0.0",
-  "description": "",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@arwes/react": "^1.0.0-next.25020502",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.3",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.10"
-  },
+  "name": "xauusd-lab-ultron",
   "private": true,
-  "type": "module"
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
+  "devDependencies": { "vite": "5.4.10", "sass": "1.80.6" }
 }

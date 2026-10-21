@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 import yaml
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -34,6 +34,23 @@ class CandleAlert(BaseModel):
     low: float
     close: float
     volume: float = 0
+
+
+class MT5Position(BaseModel):
+    ticket: int
+    symbol: str
+    type: int                 # 0 = achat, 1 = vente (convention MT5)
+    volume: float
+    price_open: float
+    sl: float = 0
+    tp: float = 0
+    price_current: float = 0
+    profit: float = 0
+    time: int = 0
+
+
+class PositionsReport(BaseModel):
+    positions: list[MT5Position]
 
 
 class KillRequest(BaseModel):
@@ -96,6 +113,37 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         candle = {"ts": _parse_time({"time": alert.time}), "open": alert.open, "high": alert.high,
                   "low": alert.low, "close": alert.close, "volume": alert.volume}
         return trader.on_candle(candle)
+
+    app.state.positions = {"at": None, "items": []}
+
+    @app.post("/api/positions", include_in_schema=False)
+    def report_positions(rep: PositionsReport, request: Request):
+        """Positions ouvertes lues dans MT5 par le pont (lecture seule). Accepté uniquement depuis la machine locale."""
+        if request.client is None or request.client.host not in ("127.0.0.1", "::1", "testclient"):
+            raise HTTPException(403, "Réservé au pont MT5 local")
+        from datetime import datetime, timezone
+        from src.scan import levels
+        items = []
+        for p in rep.positions:
+            side = "BUY" if p.type == 0 else "SELL"
+            lv = levels(side, p.price_open, p.sl, p.tp or None) if p.sl else {"entry": p.price_open, "sl": None, "tp1": None, "tp2": p.tp or None}
+            items.append({"ticket": p.ticket, "symbol": p.symbol, "side": side, "volume": p.volume,
+                          "profit": p.profit, "price": p.price_current, **lv})
+        app.state.positions = {"at": datetime.now(timezone.utc).isoformat(), "items": items}
+        return {"ok": True, "count": len(items)}
+
+    @app.get("/api/positions")
+    def positions():
+        return app.state.positions
+
+    @app.get("/api/scan")
+    def scan(symbol: str | None = None):
+        from src.scan import build_scan
+        rows = agents(symbol)
+        tf_of = {a.name: a.timeframe for a in default_registry().all()}
+        out = build_scan(rows, cfg.get("consensus", {}).get("weights", {}), tf_of)
+        return {"setups": out, "validated": False,
+                "note": "Configurations calculées, non validées par backtest : information seulement, aucun ordre."}
 
     @app.get("/api/kill")
     def kill_status():
