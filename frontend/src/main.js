@@ -114,31 +114,19 @@ async function pollPositions() {
   } catch {}
 }
 
-// ---------- trading papier ----------
-const ticket = { side: 'BUY', lots: 0.01, dist: 5, r1: 1, r2: 2 }
+// ---------- trading papier : un tap = un ordre ----------
+const ticket = { lots: 0.01, dist: 5, r1: 1, r2: 2 }
 const STEP = { lots: .01, dist: .5, r1: .25, r2: .25 }
-function ticketLevels() {
-  const m = st.book || st.market || {}, s = ticket.side === 'BUY' ? 1 : -1
-  const entry = ticket.side === 'BUY' ? m.ask : m.bid
-  if (entry == null) return null
-  return { entry, sl: entry - s * ticket.dist, tp1: entry + s * ticket.dist * ticket.r1, tp2: entry + s * ticket.dist * ticket.r2 }
-}
 function renderTicket() {
   $('#t-lots').textContent = ticket.lots.toFixed(2); $('#t-dist').textContent = ticket.dist.toFixed(2)
   $('#t-r1').textContent = ticket.r1.toFixed(2) + ' R'; $('#t-r2').textContent = ticket.r2.toFixed(2) + ' R'
-  const lv = ticketLevels()
-  $('#t-sl').textContent = fmt(lv?.sl); $('#t-tp1').textContent = fmt(lv?.tp1); $('#t-tp2').textContent = fmt(lv?.tp2)
-  $('#t-risk').textContent = lv ? fmt(ticket.dist * ticket.lots * 100) + ' $' : '—'
-  const b = $('#open-btn'); b.className = 'open-btn ' + (ticket.side === 'BUY' ? 'buy' : 'sell')
-  b.textContent = `OUVRIR ${ticket.side === 'BUY' ? 'ACHAT' : 'VENTE'} PAPIER · ${ticket.lots.toFixed(2)}`
-  b.disabled = !lv || st.kill.engaged
-  chart.set({ preview: lv ? { side: ticket.side, ...lv } : null })
+  const risk = ticket.dist * ticket.lots * 100
+  $('#t-risk').textContent = fmt(risk) + ' $'
+  $('#t-gain').textContent = fmt(risk * (ticket.r1 + ticket.r2) / 2) + ' $'
+  const m = st.book || st.market || {}
+  $('#oc-bid').textContent = fmt(m.bid); $('#oc-ask').textContent = fmt(m.ask)
+  document.querySelectorAll('.oc').forEach((b) => { b.disabled = m.bid == null || st.kill.engaged || b.classList.contains('busy') })
 }
-document.querySelectorAll('.side-seg button').forEach((b) => b.addEventListener('click', () => {
-  ticket.side = b.dataset.side
-  document.querySelectorAll('.side-seg button').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', String(x === b)) })
-  renderTicket()
-}))
 document.querySelectorAll('.stepper').forEach((row) => row.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
   const k = row.dataset.k, d = Number(b.dataset.d)
   const lim = { lots: [.01, 1], dist: [.5, 100], r1: [.25, 10], r2: [.5, 20] }[k]
@@ -146,21 +134,27 @@ document.querySelectorAll('.stepper').forEach((row) => row.querySelectorAll('but
   if (ticket.r2 < ticket.r1) ticket.r2 = ticket.r1
   renderTicket()
 })))
-async function openPaper(body) {
-  try { await post('/api/paper/open', body); toast('Position papier ouverte'); navigator.vibrate?.(30); pollPaper() }
+async function openPaper(body, btn) {
+  btn?.classList.add('busy'); renderTicket()
+  try { await post('/api/paper/open', body); toast(`${body.side === 'BUY' ? 'ACHAT' : 'VENTE'} papier ouvert`); navigator.vibrate?.(30) }
   catch (e) { toast('Refusé : ' + e.message) }
+  finally { btn?.classList.remove('busy'); pollPaper(); renderTicket() }
 }
-$('#open-btn').addEventListener('click', () => {
-  const lv = ticketLevels(); if (!lv) return
-  openPaper({ side: ticket.side, lots: ticket.lots, sl_dist: ticket.dist, r1: ticket.r1, r2: ticket.r2 })
+document.querySelectorAll('.oc').forEach((b) => b.addEventListener('click', () =>
+  openPaper({ side: b.dataset.side, lots: ticket.lots, sl_dist: ticket.dist, r1: ticket.r1, r2: ticket.r2 }, b)))
+$('#close-all').addEventListener('click', async () => {
+  try { await post('/api/paper/close_all', {}); toast('Toutes les positions papier fermées'); navigator.vibrate?.(60) }
+  catch (e) { toast('Refusé : ' + e.message) }
+  pollPaper()
 })
 $('#scan-body').addEventListener('click', (e) => {
   const b = e.target.closest('[data-take]'); if (!b) return
   const s = st.setups[Number(b.dataset.take)]; if (!s) return
-  openPaper({ side: s.side, lots: ticket.lots, sl: s.sl, tp1: s.tp1, tp2: s.tp2 })
+  openPaper({ side: s.side, lots: ticket.lots, sl: s.sl, tp1: s.tp1, tp2: s.tp2 }, b)
 })
 $('#paper-positions').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-act]'); if (!b) return
+  b.disabled = true
   try {
     if (b.dataset.act === 'close') { await post('/api/paper/close', { id: b.dataset.id }); toast('Position papier fermée') }
     if (b.dataset.act === 'be') { await post('/api/paper/modify', { id: b.dataset.id, sl: Number(b.dataset.entry) }); toast('SL au point mort') }
@@ -173,7 +167,7 @@ async function pollPaper() {
     const items = r.positions || []
     if (r.price?.bid != null) st.book = r.price
     $('#paper-equity').textContent = fmt(r.account?.equity) + ' $'
-    chart.set({ paper: items })
+    chart.set({ paper: items }); $('#close-all').hidden = items.length < 1; renderTicket()
     $('#paper-positions').innerHTML = items.length ? items.map((p) => `
       <div class="pos paper ${p.side === 'BUY' ? 'buy' : 'sell'}">
         <div class="pos-head"><b>${p.side === 'BUY' ? 'ACHAT' : 'VENTE'} ${p.lots}${p.tp1_done ? ' · ½' : ''}</b><span class="${p.pnl >= 0 ? 'up' : 'down'}">${p.pnl >= 0 ? '+' : ''}${fmt(p.pnl)}</span></div>

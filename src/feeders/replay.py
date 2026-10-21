@@ -28,7 +28,7 @@ def bar_to_ticks(c: dict, spread: float = 0.3, tf_s: int = 300) -> list[dict]:
 
 async def replay(path: str, url: str, speed: float, spread: float, tf_s: int):
     candles = CsvAdapter(path).candles()
-    async with websockets.connect(url) as ws:
+    async with websockets.connect(url, proxy=None) as ws:
         for i, c in enumerate(candles):
             await ws.send(json.dumps(bar_to_ticks(c, spread, tf_s)))
             if speed:

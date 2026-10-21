@@ -24,7 +24,6 @@ export function createChart(canvas) {
     positions.forEach((p) => levels.push(p.entry, p.sl, p.tp1, p.tp2))
     setups.forEach((s) => levels.push(s.entry, s.sl, s.tp1, s.tp2))
     paper.forEach((p) => levels.push(p.entry, p.sl, p.tp1, p.tp2))
-    if (preview) levels.push(preview.sl, preview.tp1, preview.tp2)
     const vals = bars.flatMap((b) => [b.high, b.low]).concat(levels.filter((v) => v != null), price ?? [])
     let hi = Math.max(...vals), lo = Math.min(...vals); const padv = (hi - lo) * .06 || 1; hi += padv; lo -= padv
     const y = (p) => top + (hi - p) / (hi - lo) * (bottom - top)
@@ -78,11 +77,6 @@ export function createChart(canvas) {
       if (!p.tp1_done) line(p.tp1, C.green, [6, 5], 'TP1')
       line(p.tp2, C.gold, [6, 5], 'TP2')
     })
-    if (preview && !paper.length) {
-      ctx.save(); ctx.globalAlpha = .45
-      line(preview.sl, C.red, [2, 6], 'APERÇU SL', 1); line(preview.tp1, C.green, [2, 6], 'APERÇU TP1', 1); line(preview.tp2, C.gold, [2, 6], 'APERÇU TP2', 1)
-      ctx.restore()
-    }
     if (price != null) line(price, C.gold, [1, 3], 'PRIX', 1)
     placeTags()
 

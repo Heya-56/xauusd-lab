@@ -33,7 +33,7 @@ async def stream(symbol: str, url: str, poll: float):
         raise SystemExit(f"Symbole introuvable chez le broker : {symbol}")
     last_ms, last_pos = 0, 0.0
     api = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
-    async with websockets.connect(url) as ws:
+    async with websockets.connect(url, proxy=None) as ws:
         print(f"MT5 → bus : {symbol} vers {url}  ·  positions → {api}/api/positions")
         while True:
             now = asyncio.get_running_loop().time()

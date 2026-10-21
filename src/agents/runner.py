@@ -104,7 +104,7 @@ async def main(mode: str):
     log.info("agents %s : %s", mode, [a.name for a in hub.py] + list(hub.sql))
     while True:
         try:
-            async with websockets.connect(url, max_size=2**22) as ws:
+            async with websockets.connect(url, max_size=2**22, proxy=None) as ws:
                 log.info("connecté au bus %s", url)
                 async for raw in ws:
                     ev = json.loads(raw)

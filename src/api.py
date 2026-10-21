@@ -122,31 +122,56 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
                            float(cfg.get("instrument", {}).get("contract_size", 100)))
     app.state.book = book
 
+    import logging
+    log = logging.getLogger("uvicorn.error")
+    app.state.feed = {"bus_at": 0.0, "source": None}
+
     async def follow_bus():
+        """Source principale des prix du moteur papier : chaque tick du bus Rust."""
         import asyncio, json
+        from datetime import datetime, timezone
         import websockets
         url = os.getenv("BUS_URL", "ws://127.0.0.1:9100/subscribe")
         while True:
             try:
-                async with websockets.connect(url, max_size=2**22) as ws:
+                async with websockets.connect(url, max_size=2**22, proxy=None) as ws:
+                    log.info("Moteur papier : connecté au bus %s", url)
                     async for raw in ws:
                         ev = json.loads(raw)
-                        if ev.get("type") == "tick" and ev.get("symbol") == feed_symbol:
-                            from datetime import datetime, timezone
+                        if ev.get("type") == "tick" and str(ev.get("symbol", "")).upper() == feed_symbol.upper():
                             ts = datetime.fromtimestamp(ev["ts_ms"] / 1000, tz=timezone.utc).isoformat()
                             book.on_tick(ev["bid"], ev["ask"], ts)
-            except Exception:
+                            app.state.feed = {"bus_at": _time.monotonic(), "source": "bus"}
+            except Exception as e:  # on affiche la cause dans la fenêtre 3-API, puis on réessaie
+                log.warning("Moteur papier : bus indisponible (%s: %s) — prix pris dans QuestDB en attendant", type(e).__name__, e)
                 await asyncio.sleep(3)
+
+    async def follow_questdb():
+        """Secours : si le bus ne donne rien depuis 3 s, on lit le dernier tick dans QuestDB (2 fois par seconde)."""
+        import asyncio
+        while True:
+            await asyncio.sleep(0.5)
+            if _time.monotonic() - app.state.feed["bus_at"] < 3:
+                continue
+            try:
+                from src.agents.questdb import _tag
+                rows = await asyncio.to_thread(qdb().query, f"SELECT timestamp, bid, ask FROM ticks WHERE symbol = '{_tag(feed_symbol)}' "
+                                                            "LATEST ON timestamp PARTITION BY symbol")
+                if rows and rows[0].get("bid") is not None:
+                    book.on_tick(rows[0]["bid"], rows[0]["ask"], rows[0]["timestamp"])
+                    app.state.feed["source"] = "questdb"
+            except Exception:
+                pass
 
     @app.on_event("startup")
     async def _start_follow():
         if os.getenv("XAUUSD_NO_BUS") != "1":
             import asyncio
-            app.state.follow = asyncio.create_task(follow_bus())
+            app.state.follow = [asyncio.create_task(follow_bus()), asyncio.create_task(follow_questdb())]
 
     @app.get("/api/paper")
     def paper_view():
-        return book.view()
+        return {**book.view(), "feed": app.state.feed.get("source")}
 
     @app.post("/api/paper/open")
     def paper_open(req: PaperOpen):
@@ -163,6 +188,11 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
             return book.modify(req.id, req.sl, req.tp1, req.tp2)
         except PaperError as e:
             raise HTTPException(400, str(e))
+
+    @app.post("/api/paper/close_all")
+    def paper_close_all():
+        book.close_all("MANUEL")
+        return book.view()
 
     @app.post("/api/paper/close")
     def paper_close(req: PaperClose):
