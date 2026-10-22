@@ -14,7 +14,13 @@ export function createChart(canvas) {
   function draw() {
     const w = canvas.clientWidth, h = canvas.clientHeight
     ctx.clearRect(0, 0, w, h)
-    const { bars, positions, setups, paper, preview, price } = data
+    let { bars, positions, setups, paper, preview, price } = data
+    // Après une coupure (PC éteint, flux arrêté), on n'affiche que la séance en cours :
+    // sinon l'écart de prix avec les anciennes bougies écrase tout le graphique.
+    for (let i = bars.length - 1; i > 0; i--) {
+      const gap = Date.parse(bars[i].ts) - Date.parse(bars[i - 1].ts)
+      if (gap > 45 * 60 * 1000 && bars.length - i >= 12) { bars = bars.slice(i); break }
+    }
     const axis = 70, top = 14, bottom = h - 14
     if (!bars.length) {
       ctx.fillStyle = rgba(C.grey, .8); ctx.font = '12px "Space Mono", monospace'; ctx.textAlign = 'center'
