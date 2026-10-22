@@ -95,7 +95,7 @@ def test_bar_to_ticks_rebuilds_bar():
 
 
 # ---------- intégration : bus Rust réel + agents Python + faux QuestDB ----------
-BUS_BIN = ROOT / "bus" / "target" / "release" / "bus"
+BUS_BIN = ROOT / "bus" / "target" / "release" / "hinova-bus"
 
 
 def _free_port():

@@ -5,8 +5,10 @@ REM  Pre-requis : QuestDB (service Windows) et MT5 ouvert et connecte.
 REM ============================================================
 cd /d "%~dp0"
 
-set "BUS=bus\target\release\bus.exe"
-if not exist "%BUS%" set "BUS=bus\target\release\deps\bus.exe"
+set "BUS=bus\target\release\hinova-bus.exe"
+if not exist "%BUS%" set "BUS=bus\target\release\deps\hinova_bus.exe"
+if not exist "%BUS%" set "BUS=bus\target\release\deps\hinova-bus.exe"
+if not exist "%BUS%" set "BUS=bus\target\release\bus.exe"
 if not exist "%BUS%" (
   echo [ERREUR] Bus introuvable. Compile-le d'abord : cd bus puis cargo build --release
   pause

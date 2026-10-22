@@ -5,6 +5,6 @@ COPY src ./src
 RUN cargo build --release
 
 FROM debian:bookworm-slim
-COPY --from=build /app/target/release/bus /usr/local/bin/bus
+COPY --from=build /app/target/release/hinova-bus /usr/local/bin/bus
 EXPOSE 9100
 CMD ["bus"]
