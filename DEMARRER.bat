@@ -5,12 +5,14 @@ REM  Pre-requis : QuestDB (service Windows) et MT5 ouvert et connecte.
 REM ============================================================
 cd /d "%~dp0"
 
-set "BUS=bus\target\release\hinova-bus.exe"
-if not exist "%BUS%" set "BUS=bus\target\release\deps\hinova_bus.exe"
-if not exist "%BUS%" set "BUS=bus\target\release\deps\hinova-bus.exe"
-if not exist "%BUS%" set "BUS=bus\target\release\bus.exe"
+REM Ordre de recherche : dossier target-rebuild (contournement LNK1104), puis target.
+set "BUS="
+for %%F in (bus\target-rebuild\release\hinova-bus.exe bus\target-rebuild\release\bus.exe bus\target\release\hinova-bus.exe bus\target\release\deps\hinova_bus.exe bus\target\release\bus.exe bus\target\release\deps\bus.exe) do (
+  if not defined BUS if exist "%%F" set "BUS=%%F"
+)
+if not defined BUS set "BUS=bus\target-rebuild\release\hinova-bus.exe"
 if not exist "%BUS%" (
-  echo [ERREUR] Bus introuvable. Compile-le d'abord : cd bus puis cargo build --release
+  echo [ERREUR] Bus introuvable. Compile-le d'abord : cd bus puis cargo build --release --target-dir target-rebuild
   pause
   exit /b 1
 )
@@ -22,7 +24,7 @@ if not exist admin_token.txt (
 )
 set /p ADMIN_TOKEN=<admin_token.txt
 
-echo [1/4] Bus d'evenements...
+echo [1/4] Bus d'evenements : %BUS%
 start "1-BUS (ne pas fermer)" /min cmd /k "set "QUESTDB_ILP=127.0.0.1:9009"&& "%BUS%""
 timeout /t 3 /nobreak >nul
 
