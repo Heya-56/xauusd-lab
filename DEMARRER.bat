@@ -7,7 +7,7 @@ cd /d "%~dp0"
 
 REM Ordre de recherche : dossier target-rebuild (contournement LNK1104), puis target.
 set "BUS="
-for %%F in (bus\target-rebuild\release\hinova-bus.exe bus\target-rebuild\release\bus.exe bus\target\release\hinova-bus.exe bus\target\release\deps\hinova_bus.exe bus\target\release\bus.exe bus\target\release\deps\bus.exe) do (
+for %%F in (bus\target-rebuild\release\hinova-bus.exe bus\target-rebuild\release\deps\hinova_bus.exe bus\target-rebuild\release\bus.exe bus\target\release\hinova-bus.exe bus\target\release\deps\hinova_bus.exe bus\target\release\bus.exe bus\target\release\deps\bus.exe) do (
   if not defined BUS if exist "%%F" set "BUS=%%F"
 )
 if not defined BUS set "BUS=bus\target-rebuild\release\hinova-bus.exe"
