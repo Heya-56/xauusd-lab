@@ -1,4 +1,10 @@
 fastapi
 uvicorn
 pydantic
+pyyaml
+requests
+httpx
 pytest
+websockets
+duckdb
+tzdata

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#02080b">
+  <title>XAUUSD Lab // Flight Deck</title>
+  <script type="module" crossorigin src="/ui/assets/index-BqJ5GsbB.js"></script>
+  <link rel="stylesheet" crossorigin href="/ui/assets/index-ooeRPheP.css">
+</head>
+<body class="ultron-body">
+  <div id="app" class="ultron-app" data-state="idle">
+    <canvas id="space-canvas" aria-hidden="true"></canvas>
+    <div class="scanline" aria-hidden="true"></div>
+
+    <header class="command-bar">
+      <a class="brand-lockup" href="/ui/" aria-label="Hinova Digital — XAUUSD Lab">
+        <span class="brand-sigil">H<span>D</span></span>
+        <span><strong>HINOVA DIGITAL</strong><small>XAUUSD LAB // FLIGHT DECK</small></span>
+      </a>
+      <div class="system-readout"><span class="live-dot" id="feed-dot"></span><span id="feed-label">CONNEXION…</span><i></i><span id="symbol-label">GOLD</span><i></i><span class="paper">MODE PAPIER</span></div>
+      <button class="icon-button" id="motion-toggle" aria-pressed="false" title="Réduire les animations"><span class="sound-bars">▂▅▃▇</span></button>
+    </header>
+
+    <main class="cockpit">
+      <!-- Colonne gauche : marché + positions MT5 -->
+      <aside class="rail rail-left">
+        <div class="rail-heading"><span class="micro-label">MARCHÉ</span><span class="rail-index" id="tick-age">—</span></div>
+        <div class="quote-card">
+          <div class="quote-main"><small>BID</small><b id="bid">—</b></div>
+          <div class="quote-row"><span><small>ASK</small><b id="ask">—</b></span><span><small>SPREAD</small><b id="spread">—</b></span></div>
+        </div>
+        <div class="rail-heading spaced"><span class="micro-label">POSITIONS PAPIER</span><span class="rail-index" id="paper-equity">—</span></div>
+        <button class="close-all" id="close-all" hidden>TOUT FERMER</button>
+        <div id="paper-positions" class="positions"><p class="empty">Aucune position papier.</p></div>
+        <div class="rail-heading spaced"><span class="micro-label">POSITIONS MT5</span><span class="rail-index" id="pos-count">0</span></div>
+        <div id="positions" class="positions"><p class="empty">Aucune position ouverte.<br><small>Ouvre une position dans MT5 : elle apparaît ici et sur le graphique.</small></p></div>
+      </aside>
+
+      <!-- Centre : noyau -->
+      <section class="core-stage" aria-label="Noyau du bot">
+        <div class="stage-topline"><span><b class="teal">●</b> NOYAU / LIVE</span><span id="bar-clock">M5</span></div>
+        <div class="orb-wrap">
+          <div class="orb-aura"></div>
+          <div class="orb-ring ring-a"></div><div class="orb-ring ring-b"></div><div class="orb-ring ring-c"></div>
+          <canvas id="orb-canvas" aria-hidden="true"></canvas>
+          <div class="orbit-label label-alpha"><span>α</span> FLUX</div>
+          <div class="orbit-label label-beta"><span>β</span> SCAN</div>
+          <div class="orbit-label label-gamma"><span>γ</span> RISQUE</div>
+          <div class="orb-center-label" aria-live="polite">
+            <span id="orb-kicker">XAUUSD · GOLD</span>
+            <b id="orb-price">—</b>
+            <small id="orb-state">VEILLE</small>
+          </div>
+        </div>
+        <div class="core-caption"><span class="caption-line"></span><span id="orb-caption">AUCUNE CONFIGURATION · LE BOT OBSERVE</span><span class="caption-line"></span></div>
+      </section>
+
+      <!-- Colonne droite : STOP + scan -->
+      <aside class="rail rail-right">
+        <button class="stop-button" id="stop-btn" aria-label="Frein d'urgence : tout arrêter">
+          <span class="stop-ring"></span><b id="stop-label">STOP</b><small id="stop-sub">FREIN D'URGENCE · 1 TAP</small>
+        </button>
+        <button class="release-button" id="release-btn" hidden>RELÂCHER LE FREIN (ADMIN)</button>
+
+        <div class="ticket" id="ticket">
+          <div class="card-head"><span class="micro-label">ORDRE PAPIER</span><span class="live-pill">SIMULÉ</span></div>
+          <div class="stepper" data-k="lots"><span>LOTS</span><button data-d="-1" aria-label="moins">−</button><b id="t-lots">0.01</b><button data-d="1" aria-label="plus">+</button></div>
+          <div class="stepper" data-k="dist"><span>STOP $</span><button data-d="-1" aria-label="moins">−</button><b id="t-dist">5.00</b><button data-d="1" aria-label="plus">+</button></div>
+          <div class="stepper" data-k="r1"><span>TP1</span><button data-d="-1" aria-label="moins">−</button><b id="t-r1">1.0 R</b><button data-d="1" aria-label="plus">+</button></div>
+          <div class="stepper" data-k="r2"><span>TP2</span><button data-d="-1" aria-label="moins">−</button><b id="t-r2">2.0 R</b><button data-d="1" aria-label="plus">+</button></div>
+          <div class="ticket-levels"><span>RISQUE <b id="t-risk">—</b></span><span>GAIN TP1+TP2 <b id="t-gain">—</b></span></div>
+          <div class="one-click">
+            <button class="oc sell" data-side="SELL" aria-label="Vendre immédiatement au bid"><small>VENTE</small><b id="oc-bid">—</b></button>
+            <button class="oc buy" data-side="BUY" aria-label="Acheter immédiatement à l'ask"><small>ACHAT</small><b id="oc-ask">—</b></button>
+          </div>
+          <p class="oc-hint">1 tap = ouverture immédiate en papier</p>
+        </div>
+
+        <div class="scan-card" id="scan-card">
+          <div class="card-head"><span class="micro-label">SCAN DE CONFIGURATIONS</span><span class="live-pill" id="scan-pill">VEILLE</span></div>
+          <div id="scan-body" class="scan-body"><p class="empty">Aucune configuration détectée.</p></div>
+          <p class="scan-note">Calcul non validé par backtest. Information seulement : c'est toi qui décides dans MT5.</p>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Graphique -->
+    <section class="chart-deck" aria-label="Graphique">
+      <div class="chart-head">
+        <span class="micro-label">GRAPHIQUE</span>
+        <div class="seg" role="tablist">
+          <button class="on" data-tf="300">M5</button>
+          <button data-tf="60">M1 · SCALP</button>
+        </div>
+        <div class="legend"><span class="lg sl">SL</span><span class="lg tp1">TP1</span><span class="lg tp2">TP2</span><span class="lg cfg">CONFIG</span></div>
+      </div>
+      <canvas id="chart" aria-label="Graphique en bougies avec niveaux"></canvas>
+    </section>
+
+    <footer class="footer-console">
+      <div class="footer-left"><span class="footer-mark">HD</span><span>LAB DE CONSTRUCTION — NI CONSEILLER FINANCIER NI ÉDUCATEUR</span></div>
+      <div class="footer-center">RISQUE ÉLEVÉ DE PERTE EN CAPITAL · AUCUN ORDRE ENVOYÉ</div>
+      <div class="footer-right"><span class="version">V.02</span></div>
+    </footer>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
+</body>
+</html>
