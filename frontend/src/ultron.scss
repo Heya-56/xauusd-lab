@@ -243,3 +243,9 @@ body.lite .scanline, body.lite .orb-ring, body.lite .orb-wrap::after { display: 
 body.lite .orb-aura { animation: none; filter: none; }
 body.lite .command-bar { backdrop-filter: none; }
 body.lite .stop-button:disabled { animation: none; }
+
+.night { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; margin: 6px 0 10px; padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, .12); border-radius: 6px; font-size: 13px;
+  b { letter-spacing: .12em; font-size: 12px; } small { opacity: .6; width: 100%; }
+  &.on { border-color: #ffd23f; box-shadow: 0 0 14px rgba(255, 210, 63, .25); b { color: #ffd23f; } }
+  &.off b { opacity: .7; } }

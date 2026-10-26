@@ -243,4 +243,28 @@ if (still) $('#motion-toggle').classList.add('is-muted')
 // Rafraîchissement séquentiel : une requête attend la fin de la précédente, rien ne s'empile.
 function every(fn, ms) { const run = async () => { try { await fn() } finally { setTimeout(run, document.hidden ? ms * 4 : ms) } }; run() }
 every(pollMarket, 1000); every(pollPaper, 1000); every(pollKill, 2000); every(pollPositions, 1500)
+// Fenêtre nuit : seul effet qui a tenu nos tests (2016-2018 + 2026), après spread et swap.
+// Entrée 20:50 UTC lundi, mardi, jeudi (mercredi = swap x3, vendredi = week-end) ; sortie 07:00 UTC le lendemain.
+function nightWindow(now = new Date()) {
+  const ENTRY_DAYS = [1, 2, 4]
+  const at = (d, h, m) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m))
+  for (let k = -1; k <= 7; k++) {
+    const day = new Date(now.getTime() + k * 864e5)
+    if (!ENTRY_DAYS.includes(day.getUTCDay())) continue
+    const start = at(day, 20, 50), end = new Date(at(day, 7, 0).getTime() + 864e5)
+    if (now >= start && now < end) return { open: true, start, end }
+    if (now < start) return { open: false, start, end }
+  }
+  return { open: false }
+}
+function renderNight() {
+  const el = document.getElementById('night'); if (!el) return
+  const w = nightWindow(), hm = d => d.toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+  el.className = 'night ' + (w.open ? 'on' : 'off')
+  el.innerHTML = w.open
+    ? `<b>FENÊTRE NUIT · OUVERTE</b><span>Achat possible maintenant (papier) · sortie ${hm(w.end)}</span><small>Léger avantage historique, pas une garantie. C'est toi qui décides.</small>`
+    : `<b>FENÊTRE NUIT · FERMÉE</b><span>Prochaine ouverture ${w.start ? hm(w.start) : '—'} → sortie ${w.end ? hm(w.end) : '—'}</span><small>Lun, mar, jeu seulement (mercredi : swap ×3).</small>`
+}
+renderNight(); setInterval(renderNight, 30000)
+
 every(pollBars, 5000); every(pollScan, 5000); every(pollGauge, 15000)
