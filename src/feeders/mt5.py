@@ -70,11 +70,6 @@ async def stream(symbol: str, url: str, poll: float):
         raise SystemExit(f"MT5 non initialisé : {mt5.last_error()}")
     if not mt5.symbol_select(symbol, True):
         raise SystemExit(f"Symbole introuvable chez le broker : {symbol}")
-    if os.getenv("MT5_BACKFILL", "1") == "1":
-        try:
-            await asyncio.to_thread(backfill, mt5, symbol)
-        except Exception as e:
-            print(f"Chargement de l'historique impossible ({e}) — on continue en direct")
     last_ms, last_pos = 0, 0.0
     api = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
     async with websockets.connect(url, proxy=None) as ws:
@@ -101,7 +96,18 @@ if __name__ == "__main__":
     p.add_argument("--symbol", default="XAUUSD")
     p.add_argument("--url", default=os.getenv("BUS_PUBLISH_URL", "ws://127.0.0.1:9100/publish"))
     p.add_argument("--poll", type=float, default=0.05)
+    p.add_argument("--backfill-only", action="store_true",
+                   help="charge l'historique MT5 dans QuestDB puis s'arrête (processus séparé du flux direct)")
     a = p.parse_args()
+    if a.backfill_only:
+        import MetaTrader5 as mt5
+        if not mt5.initialize():
+            raise SystemExit(f"MT5 non initialisé : {mt5.last_error()}")
+        mt5.symbol_select(a.symbol, True)
+        print("Chargement de l'historique MT5 -> QuestDB ...")
+        backfill(mt5, a.symbol)
+        print("Terminé. Cette fenêtre peut être fermée.")
+        raise SystemExit(0)
     if os.getenv("BUS_TOKEN") and "token=" not in a.url:
         a.url += ("&" if "?" in a.url else "?") + "token=" + os.environ["BUS_TOKEN"]
     asyncio.run(stream(a.symbol, a.url, a.poll))

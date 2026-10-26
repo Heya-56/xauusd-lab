@@ -41,6 +41,7 @@ timeout /t 6 /nobreak >nul
 
 echo [4/4] Pont MT5 (MT5 doit etre ouvert)...
 start "4-MT5 (ne pas fermer)" /min cmd /k "py -m src.feeders.mt5 --symbol GOLD"
+start "5-HISTORIQUE" cmd /k "py -m src.feeders.mt5 --symbol GOLD --backfill-only"
 timeout /t 2 /nobreak >nul
 
 start "" http://127.0.0.1:8000/ui/
