@@ -23,6 +23,20 @@ def send_positions(api: str, items: list) -> None:
         pass  # API pas lancée : les prix continuent d'aller au bus
 
 
+def mt5_init(mt5) -> None:
+    """Se connecte au terminal MT5 déjà ouvert. MT5_PATH = chemin de terminal64.exe si plusieurs MT5 sont installés."""
+    path = os.getenv("MT5_PATH", "").strip().strip('"')
+    ok = mt5.initialize(path=path) if path else mt5.initialize()
+    if not ok:
+        raise SystemExit(f"MT5 non initialisé : {mt5.last_error()}\n"
+                         "-> Vérifie que c'est le bon MT5 qui est ouvert et connecté. Si plusieurs MT5 sont installés, "
+                         "mets son chemin dans mt5_path.txt (ex. C:\\Program Files\\FxPro - MetaTrader 5\\terminal64.exe).")
+    acc = mt5.account_info()
+    if acc:
+        kind = "DÉMO" if acc.trade_mode == 0 else "RÉEL"
+        print(f"Connecté à MT5 : compte {acc.login} sur {acc.server} ({kind}) — lecture seule, aucun ordre envoyé")
+
+
 def bar_lines(symbol: str, tf_s: int, rates, point: float) -> str:
     """Bougies MT5 (copy_rates) -> lignes ILP de la table `bars`, même format que le bus Rust.
     Les horodatages restent à l'heure du serveur MT5, comme les ticks en direct."""
@@ -66,8 +80,7 @@ async def stream(symbol: str, url: str, poll: float):
     import MetaTrader5 as mt5  # disponible uniquement sous Windows
     import websockets
 
-    if not mt5.initialize():
-        raise SystemExit(f"MT5 non initialisé : {mt5.last_error()}")
+    mt5_init(mt5)
     if not mt5.symbol_select(symbol, True):
         raise SystemExit(f"Symbole introuvable chez le broker : {symbol}")
     last_ms, last_pos = 0, 0.0
@@ -101,8 +114,7 @@ if __name__ == "__main__":
     a = p.parse_args()
     if a.backfill_only:
         import MetaTrader5 as mt5
-        if not mt5.initialize():
-            raise SystemExit(f"MT5 non initialisé : {mt5.last_error()}")
+        mt5_init(mt5)
         mt5.symbol_select(a.symbol, True)
         print("Chargement de l'historique MT5 -> QuestDB ...")
         backfill(mt5, a.symbol)
