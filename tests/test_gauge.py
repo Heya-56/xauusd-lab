@@ -22,6 +22,6 @@ def test_not_ready_and_errors():
 
 
 def test_bar_lines():
-    from src.feeders.mt5 import bar_lines
+    from src.feeders.mt5_history import bar_lines
     l = bar_lines("GOLD", 300, [{"time": 1767607200, "open": 1, "high": 2, "low": .5, "close": 1.5, "tick_volume": 10, "spread": 20}], .01)
     assert l == "bars,symbol=GOLD,tf=300s open=1.0,high=2.0,low=0.5,close=1.5,volume=10.0,ticks=10i,spread=0.2 1767607200000000000\n"

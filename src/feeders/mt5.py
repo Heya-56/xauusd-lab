@@ -23,64 +23,12 @@ def send_positions(api: str, items: list) -> None:
         pass  # API pas lancée : les prix continuent d'aller au bus
 
 
-def mt5_init(mt5) -> None:
-    """Se connecte au terminal MT5 déjà ouvert. MT5_PATH = chemin de terminal64.exe si plusieurs MT5 sont installés."""
-    path = os.getenv("MT5_PATH", "").strip().strip('"')
-    ok = mt5.initialize(path=path) if path else mt5.initialize()
-    if not ok:
-        raise SystemExit(f"MT5 non initialisé : {mt5.last_error()}\n"
-                         "-> Vérifie que c'est le bon MT5 qui est ouvert et connecté. Si plusieurs MT5 sont installés, "
-                         "mets son chemin dans mt5_path.txt (ex. C:\\Program Files\\FxPro - MetaTrader 5\\terminal64.exe).")
-    acc = mt5.account_info()
-    if acc:
-        kind = "DÉMO" if acc.trade_mode == 0 else "RÉEL"
-        print(f"Connecté à MT5 : compte {acc.login} sur {acc.server} ({kind}) — lecture seule, aucun ordre envoyé")
-
-
-def bar_lines(symbol: str, tf_s: int, rates, point: float) -> str:
-    """Bougies MT5 (copy_rates) -> lignes ILP de la table `bars`, même format que le bus Rust.
-    Les horodatages restent à l'heure du serveur MT5, comme les ticks en direct."""
-    out = []
-    for r in rates:
-        t, o, h, l, c = int(r["time"]), float(r["open"]), float(r["high"]), float(r["low"]), float(r["close"])
-        vol = float(r["tick_volume"]); spread = float(r["spread"]) * point
-        out.append(f"bars,symbol={symbol},tf={tf_s}s open={o},high={h},low={l},close={c},volume={vol},"
-                   f"ticks={int(vol)}i,spread={spread} {t * 1_000_000_000}\n")
-    return "".join(out)
-
-
-def backfill(mt5, symbol: str, counts=((60, 5000), (300, 20000))) -> None:
-    """Charge l'historique M1 / M5 de MT5 dans QuestDB au démarrage : agents et baromètre
-    disposent tout de suite de ~2 mois d'historique au lieu de devoir l'accumuler en direct."""
-    from src.agents.questdb import QuestDB
-    db = QuestDB()
-    for sql in ("ALTER TABLE bars DEDUP ENABLE UPSERT KEYS(timestamp, symbol, tf)",):
-        try:
-            db.query(sql)       # évite les doublons si on recharge plusieurs fois
-        except Exception:
-            pass                # table pas encore créée : elle le sera par l'écriture ci-dessous
-    point = mt5.symbol_info(symbol).point
-    tfs = {60: mt5.TIMEFRAME_M1, 300: mt5.TIMEFRAME_M5}
-    for tf_s, n in counts:
-        rates = mt5.copy_rates_from_pos(symbol, tfs[tf_s], 1, n)   # 1 = on saute la bougie en cours
-        if rates is None or len(rates) == 0:
-            print(f"Historique {tf_s}s indisponible : {mt5.last_error()}")
-            continue
-        lines = bar_lines(symbol, tf_s, rates, point)
-        for i in range(0, len(lines), 2_000_000):
-            db.write(lines[i:i + 2_000_000])
-        print(f"Historique chargé dans QuestDB : {len(rates)} bougies {tf_s}s")
-    try:
-        db.query("ALTER TABLE bars DEDUP ENABLE UPSERT KEYS(timestamp, symbol, tf)")
-    except Exception:
-        pass
-
-
 async def stream(symbol: str, url: str, poll: float):
     import MetaTrader5 as mt5  # disponible uniquement sous Windows
     import websockets
 
-    mt5_init(mt5)
+    if not mt5.initialize():
+        raise SystemExit(f"MT5 non initialisé : {mt5.last_error()}")
     if not mt5.symbol_select(symbol, True):
         raise SystemExit(f"Symbole introuvable chez le broker : {symbol}")
     last_ms, last_pos = 0, 0.0
@@ -109,17 +57,7 @@ if __name__ == "__main__":
     p.add_argument("--symbol", default="XAUUSD")
     p.add_argument("--url", default=os.getenv("BUS_PUBLISH_URL", "ws://127.0.0.1:9100/publish"))
     p.add_argument("--poll", type=float, default=0.05)
-    p.add_argument("--backfill-only", action="store_true",
-                   help="charge l'historique MT5 dans QuestDB puis s'arrête (processus séparé du flux direct)")
     a = p.parse_args()
-    if a.backfill_only:
-        import MetaTrader5 as mt5
-        mt5_init(mt5)
-        mt5.symbol_select(a.symbol, True)
-        print("Chargement de l'historique MT5 -> QuestDB ...")
-        backfill(mt5, a.symbol)
-        print("Terminé. Cette fenêtre peut être fermée.")
-        raise SystemExit(0)
     if os.getenv("BUS_TOKEN") and "token=" not in a.url:
         a.url += ("&" if "?" in a.url else "?") + "token=" + os.environ["BUS_TOKEN"]
     asyncio.run(stream(a.symbol, a.url, a.poll))
