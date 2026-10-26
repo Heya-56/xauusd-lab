@@ -162,6 +162,27 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .lv b { color: var(--white); }
 .scan-note { font: 9px var(--mono); color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
 
+/* ---------- baromètre ---------- */
+.baro-deck { position: relative; z-index: 2; margin: 8px auto 0; width: calc(100% - 2 * clamp(14px, 3vw, 48px)); max-width: calc(1900px - 96px);
+  border: 1px solid var(--line); background: rgba(2, 16, 18, .78); padding: 12px; }
+.baro-note { margin-left: auto; font: 9px var(--mono); color: var(--muted); max-width: 60ch; text-align: right; }
+.baro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.baro { border: 1px solid var(--line); padding: 12px; display: grid; gap: 6px; background: rgba(3, 22, 24, .7); }
+.baro.buy { border-color: rgba(46, 229, 157, .5); } .baro.sell { border-color: rgba(255, 77, 94, .5); }
+.baro-head { display: flex; justify-content: space-between; align-items: baseline; }
+.baro-head b { font-size: 18px; letter-spacing: 2px; } .baro-head span { font: 10px var(--mono); color: var(--muted); }
+.gauge { width: 100%; max-width: 260px; margin: 0 auto; display: block; }
+.baro-verdict { display: flex; justify-content: center; align-items: baseline; gap: 10px; }
+.baro-verdict strong { font-size: 28px; letter-spacing: 3px; }
+.baro.buy .baro-verdict strong { color: var(--green); } .baro.sell .baro-verdict strong { color: var(--red); } .baro.flat .baro-verdict strong { color: var(--muted); }
+.baro-verdict span { font: 11px var(--mono); color: var(--muted); }
+.baro-chance { margin: 0; font-size: 14px; line-height: 1.4; color: #b9d6d2; text-align: center; }
+.baro-chance .up { color: var(--green); } .baro-chance .down { color: var(--red); } .baro-chance em { color: var(--gold); font-style: normal; }
+.votes { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.vote { font: 10px var(--mono); padding: 3px 6px; border: 1px solid var(--line); }
+.vote.up { color: var(--green); border-color: rgba(46, 229, 157, .4); } .vote.down { color: var(--red); border-color: rgba(255, 77, 94, .4); } .vote.flat { color: var(--muted); }
+@media (max-width: 900px) { .baro-grid { grid-template-columns: 1fr; } .baro-note { text-align: left; margin-left: 0; } }
+
 /* ---------- graphique ---------- */
 .chart-deck { position: relative; z-index: 2; margin: 8px auto 0; width: calc(100% - 2 * clamp(14px, 3vw, 48px)); max-width: calc(1900px - 96px);
   border: 1px solid var(--line); background: rgba(2, 16, 18, .78); padding: 12px; }

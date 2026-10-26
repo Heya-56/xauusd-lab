@@ -303,6 +303,29 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         except Exception as e:
             raise HTTPException(503, f"QuestDB indisponible : {e}")
 
+    @app.get("/api/gauge")
+    def api_gauge(symbol: str | None = None):
+        """Baromètre court (M5) / moyen (H1) / long (H4) terme, calculé à partir des bougies M5 de QuestDB."""
+        from src.agents.questdb import _tag
+        from src.gauge import gauge
+        sym = _tag(symbol or feed_symbol)
+        key = ("gauge", sym)
+        hit = _cache.get(key)
+        if hit and _time.monotonic() - hit[0] < 15:
+            return hit[1]
+
+        def fetch(sample):
+            q = qdb()
+            if sample is None:
+                return q.recent_bars(sym, "300s", 3000)
+            rows = q.query(f"SELECT * FROM (SELECT timestamp, first(open) open, max(high) high, min(low) low, last(close) close "
+                           f"FROM bars WHERE symbol = '{sym}' AND tf = '300s' SAMPLE BY {sample}) ORDER BY timestamp DESC LIMIT 3000")
+            return [{"ts": r["timestamp"], **{k: r[k] for k in ("open", "high", "low", "close")}} for r in reversed(rows)]
+
+        res = gauge(fetch)
+        _cache[key] = (_time.monotonic(), res)
+        return res
+
     @app.get("/api/agents")
     def agents(symbol: str | None = None):
         """Dernier résultat de chacun des 6 agents (lu dans QuestDB)."""

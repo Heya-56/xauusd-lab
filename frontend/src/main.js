@@ -177,6 +177,43 @@ async function pollPaper() {
   } catch {}
 }
 
+// ---------- baromètre ----------
+function gaugeSVG(score) {
+  const a = Math.PI * (1 - (score + 100) / 200)          // -100 → gauche, +100 → droite
+  const x = 100 + 78 * Math.cos(a), y = 100 - 78 * Math.sin(a)
+  const arc = (from, to, col) => {
+    const p = (v) => { const t = Math.PI * (1 - (v + 100) / 200); return [100 + 88 * Math.cos(t), 100 - 88 * Math.sin(t)] }
+    const [x1, y1] = p(from), [x2, y2] = p(to)
+    return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A88 88 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${col}" stroke-width="10" fill="none" />`
+  }
+  return `<svg viewBox="0 0 200 112" class="gauge" aria-hidden="true">
+    ${arc(-100, -50, '#ff4d5e')}${arc(-50, -15, '#b8414d')}${arc(-15, 15, '#4a6a6a')}${arc(15, 50, '#1f9e72')}${arc(50, 100, '#2ee59d')}
+    <line x1="100" y1="100" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#ffce4d" stroke-width="3" stroke-linecap="round" />
+    <circle cx="100" cy="100" r="6" fill="#ffce4d" />
+  </svg>`
+}
+const VOTE = { 1: ['▲', 'up'], '-1': ['▼', 'down'], 0: ['●', 'flat'] }
+async function pollGauge() {
+  try {
+    const r = await get('/api/gauge')
+    $('#baro-note').textContent = r.note || ''
+    $('#baro').innerHTML = r.horizons.map((h) => {
+      if (!h.ready) return `<div class="baro"><div class="baro-head"><b>${h.label}</b><span>${h.tf}</span></div>
+        <p class="empty">Historique insuffisant${h.bars != null ? ` (${h.bars} bougies)` : ''}. Il se charge depuis MT5 au démarrage du pont.</p></div>`
+      const cls = h.score >= 15 ? 'buy' : h.score <= -15 ? 'sell' : 'flat'
+      const chance = h.prob_up == null ? 'Pas assez d’historique pour estimer les chances.' :
+        `Dans <b>${h.sample}</b> situations passées comparables, ${h.ahead_label} plus tard le prix était <span class="up">plus haut ${h.prob_up} %</span> · <span class="down">plus bas ${h.prob_down} %</span> du temps.${h.reliable ? '' : ' <em>(échantillon faible)</em>'}`
+      return `<div class="baro ${cls}">
+        <div class="baro-head"><b>${h.label}</b><span>${h.tf} · horizon ${h.ahead_label}</span></div>
+        ${gaugeSVG(h.score)}
+        <div class="baro-verdict"><strong>${h.verdict}</strong><span>score ${h.score > 0 ? '+' : ''}${h.score}</span></div>
+        <p class="baro-chance">${chance}</p>
+        <div class="votes">${h.votes.map((v) => `<span class="vote ${VOTE[v.vote][1]}">${VOTE[v.vote][0]} ${v.name}</span>`).join('')}</div>
+      </div>`
+    }).join('')
+  } catch { $('#baro').innerHTML = '<p class="empty">Baromètre indisponible (QuestDB ?).</p>' }
+}
+
 // ---------- commandes ----------
 $('#stop-btn').addEventListener('click', async () => {
   navigator.vibrate?.(80)
@@ -206,4 +243,4 @@ if (still) $('#motion-toggle').classList.add('is-muted')
 // Rafraîchissement séquentiel : une requête attend la fin de la précédente, rien ne s'empile.
 function every(fn, ms) { const run = async () => { try { await fn() } finally { setTimeout(run, document.hidden ? ms * 4 : ms) } }; run() }
 every(pollMarket, 1000); every(pollPaper, 1000); every(pollKill, 2000); every(pollPositions, 1500)
-every(pollBars, 5000); every(pollScan, 5000)
+every(pollBars, 5000); every(pollScan, 5000); every(pollGauge, 15000)

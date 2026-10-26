@@ -56,6 +56,12 @@ class AgentHub:
 
     def run_python(self, symbol: str, candle: dict, tf: int = 300) -> list[dict]:
         h = self.history[(symbol, tf)]
+        need = max((a.warmup for a in self.py if a.timeframe == tf), default=0)
+        if len(h) < need and self.db.http:      # historique chargé depuis MT5 entre-temps ? on le relit
+            try:
+                h.clear(); h.extend(self.db.recent_bars(symbol, f"{tf}s", HISTORY - 1))
+            except Exception:
+                pass
         h.append(candle)
         candles = list(h)
         out = []
