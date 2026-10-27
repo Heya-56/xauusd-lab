@@ -96,4 +96,4 @@ def gauge(fetch_bars) -> dict:
         out.append({**{k: h[k] for k in ("key", "label", "tf", "ahead_label")}, **res})
     return {"horizons": out,
             "note": "Lecture des indicateurs, pas un conseil. Les chances sont mesurées sur l'historique "
-                    "de GOLD chargé dans QuestDB ; elles ne garantissent rien pour la suite."}
+                    "de GOLD ; elles ne garantissent rien pour la suite."}

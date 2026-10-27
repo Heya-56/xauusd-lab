@@ -269,8 +269,36 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         rows = agents(symbol)
         tf_of = {a.name: a.timeframe for a in default_registry().all()}
         out = build_scan(rows, cfg.get("consensus", {}).get("weights", {}), tf_of)
+        try:
+            n = night_plan(symbol)
+            if n.get("ready") and n["window"]["open"] and n["spread_ok"] and not killswitch.status().get("engaged"):
+                out.insert(0, {"side": "BUY", "kind": "FENÊTRE NUIT", "tf": 300, "sources": 1, "out_of": 1, "validated": True,
+                               "entry": n["entry"], "sl": n["sl"], "tp1": n["tp1"], "tp2": n["tp2"], "lots": n["lots"],
+                               "exit_at": n["window"]["end"], "note": n["stats"]})
+        except Exception:
+            pass
         return {"setups": out, "validated": False,
                 "note": "Configurations calculées, non validées par backtest : information seulement, aucun ordre."}
+
+    @app.get("/api/night")
+    def night_plan(symbol: str | None = None, capital: float = 10_000.0, risk_pct: float = 1.0):
+        """Plan de la fenêtre nuit (seule stratégie validée) : entrée, SL, TP1, TP2, lots pour 1 % de risque, spread max."""
+        from src.agents.questdb import _tag
+        from src import night
+        sym = _tag(symbol or feed_symbol)
+        key = ("night", sym, capital, risk_pct)
+        hit = _cache.get(key)
+        if hit and _time.monotonic() - hit[0] < 10:
+            return hit[1]
+        try:
+            rows = qdb().query(f"SELECT * FROM (SELECT timestamp, max(high) high, min(low) low, last(close) close FROM bars "
+                               f"WHERE symbol = '{sym}' AND tf = '300s' SAMPLE BY 1h) ORDER BY timestamp DESC LIMIT 60")
+            m = market(symbol)
+        except Exception:
+            raise HTTPException(503, "Données de marché indisponibles")
+        res = night.plan(m.get("bid"), m.get("ask"), list(reversed(rows)), capital, risk_pct)
+        _cache[key] = (_time.monotonic(), res)
+        return res
 
     @app.get("/api/kill")
     def kill_status():
@@ -293,7 +321,7 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         try:
             rows = qdb().query(f"SELECT timestamp, bid, ask FROM ticks WHERE symbol = '{sym}' LATEST ON timestamp PARTITION BY symbol")
         except Exception as e:
-            raise HTTPException(503, f"QuestDB indisponible : {e}")
+            raise HTTPException(503, "Données de marché indisponibles")
         return {"symbol": sym, **(rows[0] if rows else {})}
 
     @app.get("/api/bars")
@@ -301,7 +329,7 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         try:
             return qdb().recent_bars(symbol or feed_symbol, f"{int(tf)}s", min(int(limit), 1000))
         except Exception as e:
-            raise HTTPException(503, f"QuestDB indisponible : {e}")
+            raise HTTPException(503, "Données de marché indisponibles")
 
     @app.get("/api/gauge")
     def api_gauge(symbol: str | None = None):
@@ -334,7 +362,7 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
             return QuestDB(ilp="").query(
                 f"SELECT * FROM signals WHERE symbol = '{_tag(symbol or feed_symbol)}' LATEST ON timestamp PARTITION BY agent")
         except Exception as e:
-            raise HTTPException(503, f"QuestDB indisponible : {e}")
+            raise HTTPException(503, "Données de marché indisponibles")
 
     @app.get("/api/consensus")
     def consensus(symbol: str | None = None):

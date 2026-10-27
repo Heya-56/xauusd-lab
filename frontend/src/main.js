@@ -90,11 +90,12 @@ async function pollScan() {
     chart.set({ setups: st.setups.filter((s) => s.tf === tf) })
     $('#scan-body').innerHTML = st.setups.length ? st.setups.map((s, i) => `
       <div class="setup ${s.side === 'BUY' ? 'buy' : 'sell'}">
-        <div class="setup-head"><b>${s.side === 'BUY' ? 'ACHAT' : 'VENTE'}</b><span>${s.kind} · ${s.tf === 60 ? 'M1' : 'M5'}</span><em>${s.sources}/${s.out_of} CONCORDENT</em></div>
+        <div class="setup-head"><b>${s.side === 'BUY' ? 'ACHAT' : 'VENTE'}</b><span>${s.kind} · ${s.tf === 60 ? 'M1' : 'M5'}</span><em>${s.validated ? 'VALIDÉE 12 ANS' : `${s.sources}/${s.out_of} CONCORDENT`}</em></div>
         <div class="lv"><span>ENTRÉE</span><b>${fmt(s.entry)}</b></div>
         <div class="lv sl"><span>SL</span><b>${fmt(s.sl)}</b></div>
         <div class="lv tp1"><span>TP1</span><b>${fmt(s.tp1)}</b></div>
         <div class="lv tp2"><span>TP2</span><b>${fmt(s.tp2)}</b></div>
+        ${s.exit_at ? `<p class="setup-note">Sortie du reste : ${new Date(s.exit_at).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })} (à fermer à la main) · ${s.lots} lot</p>` : ''}
         <button class="take-btn" data-take="${i}">PRENDRE EN PAPIER</button>
       </div>`).join('') : '<p class="empty">Aucune configuration détectée.</p>'
   } catch {}
@@ -150,7 +151,7 @@ $('#close-all').addEventListener('click', async () => {
 $('#scan-body').addEventListener('click', (e) => {
   const b = e.target.closest('[data-take]'); if (!b) return
   const s = st.setups[Number(b.dataset.take)]; if (!s) return
-  openPaper({ side: s.side, lots: ticket.lots, sl: s.sl, tp1: s.tp1, tp2: s.tp2 }, b)
+  openPaper({ side: s.side, lots: s.lots ?? ticket.lots, sl: s.sl, tp1: s.tp1, tp2: s.tp2 }, b)
 })
 $('#paper-positions').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-act]'); if (!b) return
@@ -211,7 +212,7 @@ async function pollGauge() {
         <div class="votes">${h.votes.map((v) => `<span class="vote ${VOTE[v.vote][1]}">${VOTE[v.vote][0]} ${v.name}</span>`).join('')}</div>
       </div>`
     }).join('')
-  } catch { $('#baro').innerHTML = '<p class="empty">Baromètre indisponible (QuestDB ?).</p>' }
+  } catch { $('#baro').innerHTML = '<p class="empty">Baromètre indisponible (données en cours de chargement).</p>' }
 }
 
 // ---------- commandes ----------
@@ -257,7 +258,7 @@ function nightWindow(now = new Date()) {
   }
   return { open: false }
 }
-function renderNight() {
+let renderNight = function () {
   const el = document.getElementById('night'); if (!el) return
   const w = nightWindow(), hm = d => d.toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })
   el.className = 'night ' + (w.open ? 'on' : 'off')
@@ -265,6 +266,20 @@ function renderNight() {
     ? `<b>FENÊTRE NUIT · OUVERTE</b><span>Achat possible maintenant (papier) · sortie ${hm(w.end)}</span><small>Léger avantage historique, pas une garantie. C'est toi qui décides.</small>`
     : `<b>FENÊTRE NUIT · FERMÉE</b><span>Prochaine ouverture ${w.start ? hm(w.start) : '—'} → sortie ${w.end ? hm(w.end) : '—'}</span><small>Lun, mar, jeu seulement (mercredi : swap ×3).</small>`
 }
-renderNight(); setInterval(renderNight, 30000)
+let nightPlan = null
+async function pollNight() { try { nightPlan = await get('/api/night') } catch { nightPlan = null } renderNight() }
+const _renderNight = renderNight
+renderNight = function () {
+  _renderNight()
+  const el = document.getElementById('night'); if (!el || !nightPlan?.ready) return
+  const p = nightPlan
+  el.insertAdjacentHTML('beforeend', `<div class="night-plan">
+    <span>ENTRÉE <b>${fmt(p.entry)}</b></span><span class="sl">SL <b>${fmt(p.sl)}</b></span>
+    <span class="tp1">TP1 <b>${fmt(p.tp1)}</b> <small>50 % puis point mort</small></span><span class="tp2">TP2 <b>${fmt(p.tp2)}</b></span>
+    <span>LOTS <b>${p.lots}</b> <small>≈ ${fmt(p.risk_usd)} $ risqués (${p.risk_pct} % de ${p.capital.toLocaleString('fr-FR')} $)</small></span>
+    <span class="${p.spread_ok ? '' : 'bad'}">SPREAD <b>${fmt(p.spread)}</b> <small>max conseillé ${fmt(p.max_spread)}</small></span>
+  </div><small>${p.stats}</small>`)
+}
+renderNight(); setInterval(renderNight, 30000); every(pollNight, 15000)
 
 every(pollBars, 5000); every(pollScan, 5000); every(pollGauge, 15000)
