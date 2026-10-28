@@ -274,7 +274,9 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         from src.scan import build_scan
         rows = agents(symbol)
         tf_of = {a.name: a.timeframe for a in default_registry().all()}
-        out = build_scan(rows, cfg.get("consensus", {}).get("weights", {}), tf_of)
+        # Les configurations des anciens agents (EMA, MACD, RSI, scalping, Bollinger, VWAP, range) ont toutes
+        # perdu au backtest après frais : elles ne sont plus proposées. Mettre scan.legacy_agents: true pour les revoir.
+        out = build_scan(rows, cfg.get("consensus", {}).get("weights", {}), tf_of) if cfg.get("scan", {}).get("legacy_agents") else []
         try:
             n = night_plan(symbol)
             if n.get("ready") and n["window"]["open"] and not killswitch.status().get("engaged"):

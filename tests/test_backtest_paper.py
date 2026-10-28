@@ -100,7 +100,7 @@ def test_scan_and_positions(tmp_path, monkeypatch):
     assert build_scan(rows, {}, {}) == []   # désaccord : rien
     monkeypatch.setattr(questdb.QuestDB, "query", lambda self, sql: rows[:3])
     c = TestClient(create_app(db_path=str(tmp_path / "s.sqlite")))
-    assert c.get("/api/scan").json()["setups"][0]["side"] == "BUY"
+    assert c.get("/api/scan").json()["setups"] == []   # anciens agents retirés du scan (perdants au backtest)
     r = c.post("/api/positions", json={"positions": [{"ticket": 1, "symbol": "GOLD", "type": 1, "volume": 0.01,
                                                        "price_open": 4120, "sl": 4124, "tp": 0}]})
     assert r.json()["count"] == 1
