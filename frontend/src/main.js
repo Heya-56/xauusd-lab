@@ -288,3 +288,29 @@ renderNight = function () {
 renderNight(); setInterval(renderNight, 30000); every(pollNight, 15000)
 
 every(pollBars, 5000); every(pollScan, 5000); every(pollGauge, 15000)
+
+// ---------- journal de bord (overlay) ----------
+const jr = (n) => `<span class="${n > 0 ? 'up' : n < 0 ? 'down' : ''}">${n > 0 ? '+' : ''}${fmt(n)} $</span>`
+async function loadJournal(day) {
+  try {
+    const j = await get('/api/journal' + (day ? `?day=${day}` : ''))
+    const sel = $('#journal-day')
+    sel.innerHTML = (j.days.length ? j.days : ['—']).map((d) => `<option ${d === j.day ? 'selected' : ''}>${d}</option>`).join('')
+    const s = j.summary, n = j.night
+    $('#journal-body').innerHTML = `
+      <div class="jr-cards">
+        <div><small>TRADES DU JOUR</small><b>${s.trades}</b><em>${s.wins} gagnants · ${s.losses} perdants</em></div>
+        <div><small>RÉSULTAT DU JOUR</small><b>${jr(s.pnl)}</b><em>PF ${s.pf ?? '—'}</em></div>
+        <div class="night-card"><small>FENÊTRE NUIT · DEPUIS LE DÉBUT</small><b>${n.trades} nuit(s) · ${jr(n.pnl)}</b>
+          <em>PF réel ${n.pf ?? '—'} · backtest ${n.backtest_pf}</em><em>${n.note}</em></div>
+      </div>
+      ${j.trades.length ? `<table class="jr-table"><thead><tr><th>Fermé</th><th>Stratégie</th><th>Sens</th><th>Lots</th><th>Entrée</th><th>Sortie</th><th>Raison</th><th>Résultat</th></tr></thead><tbody>
+        ${j.trades.map((t) => `<tr><td>${t.closed_at.slice(11, 16)}</td><td>${t.strategy}</td><td>${t.side === 'BUY' ? 'ACHAT' : 'VENTE'}</td><td>${t.lots}</td>
+          <td>${fmt(t.entry)}</td><td>${fmt(t.exit)}</td><td>${t.reason}</td><td>${jr(t.pnl)}</td></tr>`).join('')}
+      </tbody></table>` : '<p class="empty">Aucun trade fermé ce jour-là.</p>'}`
+  } catch { $('#journal-body').innerHTML = '<p class="empty">Journal indisponible.</p>' }
+}
+$('#journal-btn').addEventListener('click', () => { $('#journal').hidden = false; loadJournal() })
+$('#journal-close').addEventListener('click', () => { $('#journal').hidden = true })
+$('#journal').addEventListener('click', (e) => { if (e.target.id === 'journal') $('#journal').hidden = true })
+$('#journal-day').addEventListener('change', (e) => loadJournal(e.target.value))

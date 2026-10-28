@@ -45,10 +45,11 @@ class ManualPaperBook:
 
     def _finish(self, pid: str):
         ex = self.j.get("manual_exits") or {}
-        if ex.pop(pid, None) is not None:
+        night = ex.pop(pid, None) is not None
+        if night:
             self.j.set("manual_exits", ex)
         p = self.positions.pop(pid)
-        self.j.add_trade(p, "PAPIER-MANUEL")
+        self.j.add_trade(p, "PAPIER-NUIT" if night else "PAPIER-MANUEL")
 
     # ---------- actions ----------
     def open(self, side: str, lots: float, sl: float | None = None, tp1: float | None = None, tp2: float | None = None,
@@ -128,6 +129,7 @@ class ManualPaperBook:
                 if pid in self.positions and datetime.fromisoformat(at) <= now]
 
     def on_tick(self, bid: float, ask: float, ts: str) -> None:
+        self.last = {"bid": bid, "ask": ask, "ts": ts}       # prix à jour avant une éventuelle sortie à heure fixe
         for pid in self.due_exits():
             try:
                 self.close(pid, "SORTIE HEURE FIXE")
@@ -161,7 +163,7 @@ class ManualPaperBook:
                         "pnl": round(p.realized + open_pnl, 2), "opened_at": p.opened_at,
                         "exit_at": (self.j.get("manual_exits") or {}).get(pid)})
         acct = self.j.get("manual_account")
-        hist = [r for r in self.j.rows("trades", 30) if r.get("mode") == "PAPIER-MANUEL"][:10]
+        hist = [r for r in self.j.rows("trades", 30) if r.get("mode") in ("PAPIER-MANUEL", "PAPIER-NUIT")][:10]
         return {"account": {**acct, "equity": round(acct["equity"], 2)}, "positions": out,
                 "history": [{k: h[k] for k in ("side", "lots", "entry", "outcome", "pnl", "r", "closed_at")} for h in hist],
                 "price": self.last}

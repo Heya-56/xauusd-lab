@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#02080b">
   <title>XAUUSD Lab // Flight Deck</title>
-  <script type="module" crossorigin src="/ui/assets/index-Duf5h_Rr.js"></script>
-  <link rel="stylesheet" crossorigin href="/ui/assets/index-Dckfzsu_.css">
+  <script type="module" crossorigin src="/ui/assets/index-BWohQLTr.js"></script>
+  <link rel="stylesheet" crossorigin href="/ui/assets/index-CxMNQ4k4.css">
 </head>
 <body class="ultron-body">
   <div id="app" class="ultron-app" data-state="idle">
@@ -18,7 +18,7 @@
         <span class="brand-sigil">H<span>D</span></span>
         <span><strong>HINOVA DIGITAL</strong><small>XAUUSD LAB // FLIGHT DECK</small></span>
       </a>
-      <div class="system-readout"><span class="live-dot" id="feed-dot"></span><span id="feed-label">CONNEXION…</span><i></i><span id="symbol-label">GOLD</span><i></i><span class="paper">MODE PAPIER</span></div>
+      <div class="system-readout"><span class="live-dot" id="feed-dot"></span><span id="feed-label">CONNEXION…</span><i></i><span id="symbol-label">GOLD</span><i></i><span class="paper">MODE PAPIER</span><i></i><button class="journal-btn" id="journal-btn" type="button">JOURNAL</button></div>
       <button class="icon-button" id="motion-toggle" aria-pressed="false" title="Réduire les animations"><span class="sound-bars">▂▅▃▇</span></button>
     </header>
 
@@ -110,6 +110,13 @@
       <div class="footer-center">RISQUE ÉLEVÉ DE PERTE EN CAPITAL · AUCUN ORDRE ENVOYÉ</div>
       <div class="footer-right"><span class="version">V.02</span></div>
     </footer>
+    <div class="journal" id="journal" hidden>
+      <div class="journal-box" role="dialog" aria-label="Journal de bord">
+        <div class="journal-head"><b>JOURNAL DE BORD</b><select id="journal-day"></select>
+          <a class="journal-csv" href="/api/journal.csv" download>EXPORTER CSV</a><button id="journal-close" type="button">✕</button></div>
+        <div id="journal-body"><p class="empty">Chargement…</p></div>
+      </div>
+    </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </div>
 </body>

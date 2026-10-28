@@ -256,3 +256,21 @@ body.lite .stop-button:disabled { animation: none; }
 
 .setup-block { font-size: 12px; color: #ffd23f; margin: 8px 0 2px; }
 .pos-exit { font-size: 11px; color: #ffd23f; margin-top: 4px; }
+
+.journal-btn { background: none; border: 1px solid #ffd23f; color: #ffd23f; font: inherit; font-size: 11px; letter-spacing: .14em;
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; min-height: 32px; }
+.journal { position: fixed; inset: 0; z-index: 50; background: rgba(0, 8, 10, .78); display: flex; align-items: center; justify-content: center; padding: 16px;
+  &[hidden] { display: none; } }
+.journal-box { width: min(980px, 100%); max-height: 90vh; overflow: auto; background: #04191c; border: 1px solid rgba(46, 230, 166, .35);
+  border-radius: 8px; padding: 18px; box-shadow: 0 0 40px rgba(46, 230, 166, .15); }
+.journal-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px;
+  b { letter-spacing: .16em; flex: 1; } select, a, button { background: #062a2e; color: #cfeee6; border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 4px; padding: 6px 10px; font: inherit; font-size: 12px; text-decoration: none; cursor: pointer; min-height: 36px; } }
+.jr-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px;
+  > div { border: 1px solid rgba(255, 255, 255, .1); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+  small { opacity: .6; letter-spacing: .12em; font-size: 10px; } b { font-size: 18px; } em { font-style: normal; font-size: 11px; opacity: .65; }
+  .night-card { border-color: rgba(255, 210, 63, .5); } }
+.jr-table { width: 100%; border-collapse: collapse; font-size: 12px;
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid rgba(255, 255, 255, .07); white-space: nowrap; }
+  th { opacity: .55; font-weight: normal; letter-spacing: .08em; } }
+.journal .up { color: #2ee6a6; } .journal .down { color: #ff4d6d; }

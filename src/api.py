@@ -302,6 +302,18 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         _cache[key] = (_time.monotonic(), res)
         return res
 
+    @app.get("/api/journal")
+    def journal_day(day: str | None = None):
+        from src import daybook
+        return daybook.build(book.j, day)
+
+    @app.get("/api/journal.csv")
+    def journal_csv():
+        from fastapi.responses import Response
+        from src import daybook
+        return Response(daybook.to_csv(book.j), media_type="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": "attachment; filename=journal-hinova.csv"})
+
     @app.get("/api/kill")
     def kill_status():
         return killswitch.status()
