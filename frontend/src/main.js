@@ -65,10 +65,19 @@ async function pollMarket() {
     $('#bid').textContent = fmt(m.bid); $('#ask').textContent = fmt(m.ask)
     $('#spread').textContent = m.bid && m.ask ? fmt(m.ask - m.bid) : '—'
     $('#orb-price').textContent = fmt(m.bid); $('#symbol-label').textContent = m.symbol || 'GOLD'
-    const age = m.timestamp ? (Date.now() - Date.parse(m.timestamp)) / 1000 : null
+    // L'heure des ticks est celle du serveur MT5 (pas UTC) : on mesure donc depuis quand le dernier tick a CHANGÉ.
+    if (m.timestamp !== st.lastTs) { st.lastTs = m.timestamp; st.lastChange = Date.now() }
+    const age = st.lastChange ? (Date.now() - st.lastChange) / 1000 : null
+    const now = new Date(), wd = now.getUTCDay(), h = now.getUTCHours()
+    const closed = wd === 6 || (wd === 5 && h >= 21) || (wd === 0 && h < 22)
+    const cut = !closed && age != null && age > 90
     $('#tick-age').textContent = age == null ? '—' : age < 5 ? 'LIVE' : `${Math.round(age)} S`
-    $('#feed-label').textContent = age != null && age < 30 ? 'FLUX EN DIRECT' : 'FLUX EN PAUSE'
-    $('#feed-dot').classList.toggle('stale', !(age != null && age < 30))
+    $('#feed-label').textContent = closed ? 'MARCHÉ FERMÉ' : cut ? 'FLUX COUPÉ' : 'FLUX EN DIRECT'
+    $('#feed-dot').classList.toggle('stale', closed || cut)
+    const banner = $('#feed-alert')
+    banner.hidden = !cut
+    if (cut) banner.innerHTML = `<b>⚠ FLUX COUPÉ</b> Aucun nouveau prix depuis ${Math.round(age / 60)} min : le prix affiché est figé.
+      Vérifie que MT5 est ouvert et connecté (barres vertes en bas à droite) et que la fenêtre <b>4-MT5</b> tourne.`
     chart.set({ price: st.price }); renderTicket()
   } catch { st.online = false; $('#feed-label').textContent = 'API HORS LIGNE'; $('#feed-dot').classList.add('stale') }
   applyState()

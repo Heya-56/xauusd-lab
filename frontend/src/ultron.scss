@@ -274,3 +274,7 @@ body.lite .stop-button:disabled { animation: none; }
   th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid rgba(255, 255, 255, .07); white-space: nowrap; }
   th { opacity: .55; font-weight: normal; letter-spacing: .08em; } }
 .journal .up { color: #2ee6a6; } .journal .down { color: #ff4d6d; }
+
+.feed-alert { position: relative; z-index: 5; margin: 8px auto 0; width: calc(100% - 2 * clamp(14px, 3vw, 48px)); padding: 10px 14px;
+  border: 1px solid #ff4d6d; border-radius: 6px; background: rgba(255, 77, 109, .12); color: #ffd6dd; font-size: 13px;
+  b { color: #ff4d6d; letter-spacing: .1em; margin-right: 8px; } &[hidden] { display: none; } }
