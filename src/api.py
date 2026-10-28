@@ -62,6 +62,7 @@ class PaperOpen(BaseModel):
     sl_dist: float | None = None
     r1: float = 1.0
     r2: float = 2.0
+    exit_at: str | None = None
 
 
 class PaperModify(BaseModel):
@@ -178,7 +179,7 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         if killswitch.engaged():
             raise HTTPException(423, "STOP engagé : ouverture refusée")
         try:
-            return book.open(req.side, req.lots, req.sl, req.tp1, req.tp2, req.sl_dist, req.r1, req.r2)
+            return book.open(req.side, req.lots, req.sl, req.tp1, req.tp2, req.sl_dist, req.r1, req.r2, req.exit_at)
         except PaperError as e:
             raise HTTPException(400, str(e))
 
@@ -271,10 +272,11 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         out = build_scan(rows, cfg.get("consensus", {}).get("weights", {}), tf_of)
         try:
             n = night_plan(symbol)
-            if n.get("ready") and n["window"]["open"] and n["spread_ok"] and not killswitch.status().get("engaged"):
+            if n.get("ready") and n["window"]["open"] and not killswitch.status().get("engaged"):
                 out.insert(0, {"side": "BUY", "kind": "FENÊTRE NUIT", "tf": 300, "sources": 1, "out_of": 1, "validated": True,
                                "entry": n["entry"], "sl": n["sl"], "tp1": n["tp1"], "tp2": n["tp2"], "lots": n["lots"],
-                               "exit_at": n["window"]["end"], "note": n["stats"]})
+                               "exit_at": n["window"]["end"], "note": n["stats"],
+                               "blocked": None if n["spread_ok"] else f"Spread {n['spread']:.2f} > {n['max_spread']:.2f} : attends qu'il redescende"})
         except Exception:
             pass
         return {"setups": out, "validated": False,

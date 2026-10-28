@@ -43,12 +43,13 @@ function loop(t) {
 
 // ---------- état visuel ----------
 function applyState() {
-  const s = st.kill.engaged ? 'stop' : !st.online ? 'offline' : st.setups.length ? 'setup' : 'idle'
+  const ready = st.setups.filter((x) => !x.blocked)
+  const s = st.kill.engaged ? 'stop' : !st.online ? 'offline' : ready.length ? 'setup' : 'idle'
   app.dataset.state = s; orb.setState(s)
   const lbl = { idle: 'VEILLE', setup: 'CONFIGURATION DÉTECTÉE', stop: 'STOP ENGAGÉ', offline: 'HORS LIGNE' }[s]
   $('#orb-state').textContent = lbl
   $('#orb-caption').textContent = {
-    idle: 'AUCUNE CONFIGURATION · LE BOT OBSERVE', setup: `${st.setups.length} CONFIGURATION(S) · À TOI DE DÉCIDER`,
+    idle: 'AUCUNE CONFIGURATION · LE BOT OBSERVE', setup: `${ready.length} CONFIGURATION(S) · À TOI DE DÉCIDER`,
     stop: 'TOUT EST À L’ARRÊT · AGENTS COUPÉS', offline: 'API INJOIGNABLE · VÉRIFIE LES FENÊTRES',
   }[s]
   $('#scan-pill').textContent = s === 'setup' ? 'DÉTECTION' : s === 'stop' ? 'COUPÉ' : 'VEILLE'
@@ -88,6 +89,9 @@ async function pollScan() {
     const r = await get('/api/scan')
     st.setups = st.kill.engaged ? [] : r.setups
     chart.set({ setups: st.setups.filter((s) => s.tf === tf) })
+    $('#scan-note').textContent = st.setups.some((x) => x.validated)
+      ? 'Fenêtre nuit testée sur 12 ans de données FxPro : avantage modeste, aucune garantie. C’est toi qui décides.'
+      : 'Calcul non validé par backtest. Information seulement : c’est toi qui décides dans MT5.'
     $('#scan-body').innerHTML = st.setups.length ? st.setups.map((s, i) => `
       <div class="setup ${s.side === 'BUY' ? 'buy' : 'sell'}">
         <div class="setup-head"><b>${s.side === 'BUY' ? 'ACHAT' : 'VENTE'}</b><span>${s.kind} · ${s.tf === 60 ? 'M1' : 'M5'}</span><em>${s.validated ? 'VALIDÉE 12 ANS' : `${s.sources}/${s.out_of} CONCORDENT`}</em></div>
@@ -95,8 +99,8 @@ async function pollScan() {
         <div class="lv sl"><span>SL</span><b>${fmt(s.sl)}</b></div>
         <div class="lv tp1"><span>TP1</span><b>${fmt(s.tp1)}</b></div>
         <div class="lv tp2"><span>TP2</span><b>${fmt(s.tp2)}</b></div>
-        ${s.exit_at ? `<p class="setup-note">Sortie du reste : ${new Date(s.exit_at).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })} (à fermer à la main) · ${s.lots} lot</p>` : ''}
-        <button class="take-btn" data-take="${i}">PRENDRE EN PAPIER</button>
+        ${s.exit_at ? `<p class="setup-note">Sortie du reste : ${new Date(s.exit_at).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })} (fermeture automatique en papier) · ${s.lots} lot</p>` : ''}
+        ${s.blocked ? `<p class="setup-block">⏸ ${s.blocked}</p>` : `<button class="take-btn" data-take="${i}">PRENDRE EN PAPIER</button>`}
       </div>`).join('') : '<p class="empty">Aucune configuration détectée.</p>'
   } catch {}
   applyState()
@@ -151,7 +155,7 @@ $('#close-all').addEventListener('click', async () => {
 $('#scan-body').addEventListener('click', (e) => {
   const b = e.target.closest('[data-take]'); if (!b) return
   const s = st.setups[Number(b.dataset.take)]; if (!s) return
-  openPaper({ side: s.side, lots: s.lots ?? ticket.lots, sl: s.sl, tp1: s.tp1, tp2: s.tp2 }, b)
+  openPaper({ side: s.side, lots: s.lots ?? ticket.lots, sl: s.sl, tp1: s.tp1, tp2: s.tp2, exit_at: s.exit_at }, b)
 })
 $('#paper-positions').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-act]'); if (!b) return
@@ -173,6 +177,7 @@ async function pollPaper() {
       <div class="pos paper ${p.side === 'BUY' ? 'buy' : 'sell'}">
         <div class="pos-head"><b>${p.side === 'BUY' ? 'ACHAT' : 'VENTE'} ${p.lots}${p.tp1_done ? ' · ½' : ''}</b><span class="${p.pnl >= 0 ? 'up' : 'down'}">${p.pnl >= 0 ? '+' : ''}${fmt(p.pnl)}</span></div>
         <div class="pos-lv"><span>ENTRÉE <b>${fmt(p.entry)}</b></span><span class="sl">SL <b>${fmt(p.sl)}</b></span><span class="tp1">TP1 <b>${p.tp1_done ? '✓' : fmt(p.tp1)}</b></span><span class="tp2">TP2 <b>${fmt(p.tp2)}</b></span></div>
+        ${p.exit_at ? `<div class="pos-exit">⏱ Fermeture automatique ${new Date(p.exit_at).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</div>` : ''}
         <div class="pos-actions"><button data-act="be" data-id="${p.id}" data-entry="${p.entry}" ${p.sl === p.entry ? 'disabled' : ''}>SL → POINT MORT</button><button data-act="close" data-id="${p.id}" class="danger">FERMER</button></div>
       </div>`).join('') : '<p class="empty">Aucune position papier.<br><small>Utilise le ticket « Ordre papier » pour en ouvrir une.</small></p>'
   } catch {}

@@ -44,12 +44,15 @@ class ManualPaperBook:
         acct = self.j.get("manual_account"); acct["equity"] += delta; self.j.set("manual_account", acct)
 
     def _finish(self, pid: str):
+        ex = self.j.get("manual_exits") or {}
+        if ex.pop(pid, None) is not None:
+            self.j.set("manual_exits", ex)
         p = self.positions.pop(pid)
         self.j.add_trade(p, "PAPIER-MANUEL")
 
     # ---------- actions ----------
     def open(self, side: str, lots: float, sl: float | None = None, tp1: float | None = None, tp2: float | None = None,
-             sl_dist: float | None = None, r1: float = 1.0, r2: float = 2.0) -> dict:
+             sl_dist: float | None = None, r1: float = 1.0, r2: float = 2.0, exit_at: str | None = None) -> dict:
         """SL/TP en prix absolus, ou en distance (sl_dist, en $) et multiples de R, calculés sur le prix d'exécution."""
         side = side.upper()
         with self.lock:
@@ -78,6 +81,8 @@ class ManualPaperBook:
             pid = uuid.uuid4().hex[:8]
             self.positions[pid] = Position(side, round(entry, 2), round(sl, 2), round(tp1, 2), round(tp2, 2),
                                            round(lots, 2), self.last["ts"] or _now(), self.contract_size, 0.0)
+            if exit_at:                       # sortie à heure fixe (fenêtre nuit), en UTC
+                ex = self.j.get("manual_exits") or {}; ex[pid] = exit_at; self.j.set("manual_exits", ex)
             self._save()
             return self.view()
 
@@ -117,7 +122,17 @@ class ManualPaperBook:
             except PaperError:
                 pass
 
+    def due_exits(self, now: datetime | None = None) -> list[str]:
+        now = now or datetime.now(timezone.utc)
+        return [pid for pid, at in (self.j.get("manual_exits") or {}).items()
+                if pid in self.positions and datetime.fromisoformat(at) <= now]
+
     def on_tick(self, bid: float, ask: float, ts: str) -> None:
+        for pid in self.due_exits():
+            try:
+                self.close(pid, "SORTIE HEURE FIXE")
+            except PaperError:
+                pass
         with self.lock:
             self.last = {"bid": bid, "ask": ask, "ts": ts}
             changed = False
@@ -143,7 +158,8 @@ class ManualPaperBook:
             out.append({"id": pid, "side": p.side, "lots": p.lots, "entry": p.entry, "sl": p.stop,
                         "sl_initial": p.initial_stop, "tp1": p.tp1, "tp2": p.tp2, "tp1_done": p.tp1_done,
                         "remaining": p.remaining, "realized": round(p.realized, 2),
-                        "pnl": round(p.realized + open_pnl, 2), "opened_at": p.opened_at})
+                        "pnl": round(p.realized + open_pnl, 2), "opened_at": p.opened_at,
+                        "exit_at": (self.j.get("manual_exits") or {}).get(pid)})
         acct = self.j.get("manual_account")
         hist = [r for r in self.j.rows("trades", 30) if r.get("mode") == "PAPIER-MANUEL"][:10]
         return {"account": {**acct, "equity": round(acct["equity"], 2)}, "positions": out,

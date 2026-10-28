@@ -56,3 +56,16 @@ def test_open_by_distance(tmp_path):
     b.on_tick(4127.0, 4127.2, "t0")
     p = b.open("SELL", 0.01, sl_dist=4, r1=1.5, r2=3)["positions"][0]
     assert (p["entry"], p["sl"], p["tp1"], p["tp2"]) == (4127.0, 4131.0, 4121.0, 4115.0)
+
+
+def test_fixed_time_exit(tmp_path):
+    from datetime import datetime, timedelta, timezone
+    from src.engine.manual_paper import ManualPaperBook
+    from src.journal import Journal
+    b = ManualPaperBook(Journal(str(tmp_path / "j.db")))
+    b.on_tick(4000.0, 4000.2, "2026-10-27T20:50:00")
+    past = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+    v = b.open("BUY", 0.02, sl=3950, tp1=4030, tp2=4060, exit_at=past)
+    assert v["positions"][0]["exit_at"] == past
+    b.on_tick(4001.0, 4001.2, "2026-10-28T07:00:00")
+    assert b.view()["positions"] == []
