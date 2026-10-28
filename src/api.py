@@ -179,6 +179,11 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
         if killswitch.engaged():
             raise HTTPException(423, "STOP engagé : ouverture refusée")
         try:
+            if req.exit_at:
+                taken = book.j.get("night_taken") or []
+                if req.exit_at in taken:
+                    raise HTTPException(409, "Fenêtre nuit déjà prise : une seule entrée par nuit")
+                book.j.set("night_taken", (taken + [req.exit_at])[-60:])
             return book.open(req.side, req.lots, req.sl, req.tp1, req.tp2, req.sl_dist, req.r1, req.r2, req.exit_at)
         except PaperError as e:
             raise HTTPException(400, str(e))
@@ -276,7 +281,10 @@ def create_app(config_path: str = CONFIG_PATH, db_path: str = DB_PATH) -> FastAP
                 out.insert(0, {"side": "BUY", "kind": "FENÊTRE NUIT", "tf": 300, "sources": 1, "out_of": 1, "validated": True,
                                "entry": n["entry"], "sl": n["sl"], "tp1": n["tp1"], "tp2": n["tp2"], "lots": n["lots"],
                                "exit_at": n["window"]["end"], "note": n["stats"],
-                               "blocked": None if n["spread_ok"] else f"Spread {n['spread']:.2f} > {n['max_spread']:.2f} : attends qu'il redescende"})
+                               "blocked": ("Déjà prise cette nuit : une seule entrée par nuit (règle testée)"
+                                           if any(p.get("exit_at") == n["window"]["end"] for p in book.view()["positions"])
+                                           or n["window"]["end"] in (book.j.get("night_taken") or [])
+                                           else None if n["spread_ok"] else f"Spread {n['spread']:.2f} > {n['max_spread']:.2f} : attends qu'il redescende")})
         except Exception:
             pass
         return {"setups": out, "validated": False,
