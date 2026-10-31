@@ -4,6 +4,7 @@ A research and paper-validation laboratory for XAUUSD strategies. The determinis
 
 ## Start here
 
+- **[Kernel Test Bench](web/kernel.html)** — browser diagnostics for event contracts, safety invariants and optional read-only API health checks; [scope and limits](docs/KERNEL-TEST-BENCH.md).
 - **[Claude Code: full Hinova Trading Lab architecture and implementation brief](docs/CLAUDE-HINOVA-TRADING-LAB-SPEC.md)** — system layers, strategy toggles, scalping/intraday/swing profiles, anti-hallucination controls, daily research loop, multi-tenancy, Cloudflare white-label deployment and acceptance criteria.
 - [Claude Code: MQL5-first gold engine brief](docs/CLAUDE-GOLD-ENGINE-BRIEF.md) — locate and audit the actual EA source before claiming strategy parity.
 - [GitHub Actions](https://github.com/Heya-56/xauusd-lab/actions) — select **Lab smoke test** and choose **Run workflow** to validate the current code and safety checks.
