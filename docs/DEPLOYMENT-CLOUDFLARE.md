@@ -32,6 +32,10 @@ Browser ── Cloudflare Pages (web/) ──HTTPS (session)──▶ Cloudflare
 | Engine image | Dockerfile written; **not built here** (no Docker daemon in this sandbox) | no |
 | MT5 EAs | not compiled here (MetaEditor is Windows-only) | — |
 
+## Preview deployment safety gate
+
+The manual workflow requires `D1_PREVIEW_DATABASE_ID` and targets the dedicated database name `hinova-trading-lab-preview` and Worker name `hinova-accounts-api-preview`. Create a separate preview D1 database and set that variable to its ID only; never reuse a production database ID. The workflow validates required secrets/variables and tests before it applies remote migrations. It deploys the Worker and the Pages `preview` branch only. It does **not** build or host the Python engine container, which must already be reachable over HTTPS at `ENGINE_URL`.
+
 ## Secrets and variables
 
 | Name | Where | Purpose |
@@ -40,7 +44,7 @@ Browser ── Cloudflare Pages (web/) ──HTTPS (session)──▶ Cloudflare
 | `ENGINE_SECRET` | GitHub secret → Worker secret; same value as `HINOVA_ENGINE_SECRET` on the engine host | HMAC between Worker and engine (≥ 32 random chars) |
 | `TURNSTILE_SECRET` | GitHub secret → Worker secret | Anti-bot on sign-up and password reset (Cloudflare Turnstile, free) |
 | `RESEND_API_KEY` | GitHub secret → Worker secret | Verification and reset e-mails (provider: Resend; replaceable in `email.js`) |
-| `CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID`, `PAGES_PROJECT` | GitHub variables | Targets |
+| `CLOUDFLARE_ACCOUNT_ID`, `D1_PREVIEW_DATABASE_ID`, `PAGES_PROJECT` | GitHub variables | Targets |
 | `DASHBOARD_ORIGIN`, `ACCOUNTS_API_URL`, `ENGINE_URL`, `EMAIL_FROM`, `TURNSTILE_SITEKEY` | GitHub variables | Public configuration |
 
 Never commit any of these. `.gitignore` excludes `.env*`, `.dev.vars`, `.wrangler/`, `workers/*/wrangler.toml`.
@@ -49,7 +53,7 @@ which must only be used locally.
 
 ## First preview deployment (once you approve)
 
-1. Create the D1 database: `npx wrangler d1 create hinova-trading-lab` → note the id.
+1. Create a dedicated preview D1 database: `npx wrangler d1 create hinova-trading-lab-preview` → set its ID as `D1_PREVIEW_DATABASE_ID`. Do not use the production database ID.
 2. Create a Turnstile widget (Cloudflare dashboard → Turnstile) for the dashboard domain → site key + secret.
 3. Create a Resend account, verify the sending domain → API key.
 4. Run the engine container: `docker build -f Dockerfile.engine -t hinova-engine .` and
