@@ -1,0 +1,9 @@
+name = "xauusd-strategy-gis"
+main = "src/index.ts"
+compatibility_date = "2026-10-15"
+
+[observability]
+enabled = true
+
+# Deploy as a separate Worker. Do not bind this directly to order execution.
+# Configure a route or custom domain only after review and authentication are added.
