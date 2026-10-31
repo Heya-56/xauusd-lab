@@ -1,0 +1,54 @@
+# Pile complète XAUUSD Lab : QuestDB + bus Rust + 6 agents + API interface.
+#   docker compose up -d --build
+#   python -m src.feeders.replay XAUUSD_M5.csv        (ou src.feeders.mt5 sous Windows)
+#   Console QuestDB : http://localhost:9000   ·   API : http://localhost:8000/api/consensus
+services:
+  questdb:
+    image: questdb/questdb:8.2.1
+    ports: ["9000:9000", "9009:9009"]
+    volumes: ["questdb-data:/var/lib/questdb"]
+    restart: unless-stopped
+
+  bus:
+    build: ./bus
+    environment:
+      BUS_ADDR: 0.0.0.0:9100
+      BAR_SECONDS: "300"
+      QUESTDB_ILP: questdb:9009
+      BUS_TOKEN: ${BUS_TOKEN:-}
+    ports: ["9100:9100"]
+    depends_on: [questdb]
+    restart: unless-stopped
+
+  agents-python:
+    build: .
+    command: python -m src.agents.runner python
+    environment: &agent_env
+      BUS_URL: ws://bus:9100/subscribe
+      QUESTDB_ILP: questdb:9009
+      QUESTDB_HTTP: http://questdb:9000
+    depends_on: [bus]
+    restart: unless-stopped
+
+  agents-sql:
+    build: .
+    command: python -m src.agents.runner sql
+    environment: *agent_env
+    depends_on: [bus]
+    restart: unless-stopped
+
+  api:
+    build: .
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
+    environment:
+      QUESTDB_HTTP: http://questdb:9000
+      XAUUSD_DB: /data/paper.sqlite
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+    volumes: ["paper-data:/data"]
+    ports: ["8000:8000"]
+    depends_on: [questdb]
+    restart: unless-stopped
+
+volumes:
+  questdb-data:
+  paper-data:

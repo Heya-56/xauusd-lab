@@ -1,11 +1,17 @@
-name: Test Création Bot
-on: [push,pull_request]
+name: Tests XAUUSD Lab
+on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bus Rust — tests et compilation
+        working-directory: bus
+        run: cargo test --release && cargo build --release
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
       - run: pip install -r requirements.txt
-      - run: pytest
+      - name: Tests Python (dont bout en bout bus → agents)
+        run: pytest -q
+      - run: python -m src.main check

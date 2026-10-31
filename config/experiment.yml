@@ -2,10 +2,14 @@ experiment:
   name: XAUUSD_SPOT_IBKR_001
   symbol: XAUUSD
   timezone: Europe/Paris
-  execution_time: "14:00"
   days: [MON, WED, FRI]
+  entry_window: ["14:00", "18:00"]   # entrées autorisées (heure de Paris) ; supprimer pour 24h/24
   timeframe: "5m"
   max_trades_per_day: 1
+  max_bars_in_trade: 48               # sortie forcée après 4 h en M5 (0 = illimité)
+
+strategy:
+  name: ema_cross                     # EMA20/EMA50, stop 0,5×ATR14, TP1 1R (50 %), TP2 2R (50 %)
 
 execution:
   mode: paper
@@ -14,26 +18,48 @@ execution:
 
 risk:
   max_risk_per_trade_pct: 0.25
-  max_daily_loss_pct: 1.0
+  max_daily_loss_pct: 0.5
   max_open_positions: 1
+  max_position_lots: 0.01             # plafond prototype
   require_spread_check: true
   require_whatif_preview: true
 
+costs:                                # en dollars par once, à ajuster au broker
+  spread: 0.30
+  slippage: 0.05
+
+paper:
+  starting_equity: 10000
+
 instrument:
   symbol: XAUUSD
+  feed_symbol: GOLD                   # nom de l'or chez le broker (FxPro : GOLD)
   asset_class: spot_gold
   currency: USD
+  contract_size: 100                  # 1 lot = 100 oz
+  lot_step: 0.01
   ibkr_conid_env: IBKR_CONID
 
 data:
   primary: ibkr
-  research_fallback: null
+  research_fallback: yahoo
   source: midpoint
   outside_rth: true
   max_timestamp_gap_minutes: 10
 
 validation:
   require_out_of_sample: true
+  in_sample_ratio: 0.7
   minimum_trades: 30
   include_costs: true
   include_slippage: true
+
+consensus:                            # poids des 6 agents dans le vote affiché à l'interface
+  weights:
+    ema_cross: 1.0
+    macd_cross: 1.0
+    rsi_reversion: 1.0
+    sql_bollinger_reversion: 1.0
+    sql_vwap_cross: 1.0
+    sql_range_breakout: 1.0
+    scalp_momentum: 0.0             # le scalping (M1) ne vote pas dans le consensus M5
